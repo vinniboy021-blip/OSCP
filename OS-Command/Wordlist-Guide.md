@@ -1,46 +1,46 @@
-# Wordlist Guide
+# Guia de Wordlists
 
-## Table of Contents
-- [Wordlist Locations](#wordlist-locations)
-- [Password Wordlists](#password-wordlists)
-- [Username Wordlists](#username-wordlists)
-- [Directory Wordlists](#directory-wordlists)
-- [Subdomain Wordlists](#subdomain-wordlists)
-- [Service-Specific Wordlists](#service-specific-wordlists)
-- [Custom Wordlist Generation](#custom-wordlist-generation)
-- [Username Generation Tools](#username-generation-tools)
+## Índice
+- [Locais das Wordlists](#locais-das-wordlists)
+- [Wordlists de Senhas](#wordlists-de-senhas)
+- [Wordlists de Usuários](#wordlists-de-usuários)
+- [Wordlists de Diretórios](#wordlists-de-diretórios)
+- [Wordlists de Subdomínios](#wordlists-de-subdomínios)
+- [Wordlists por Serviço](#wordlists-por-serviço)
+- [Geração de Wordlists Personalizadas](#geração-de-wordlists-personalizadas)
+- [Ferramentas de Geração de Usuários](#ferramentas-de-geração-de-usuários)
 
 ---
 
-## Wordlist Locations
+## Locais das Wordlists
 
-### Quick Check (One-liner)
+### Verificação Rápida (One-liner)
 
 ```shell
-# Quick wordlist availability check
+# Verificação rápida de disponibilidade de wordlists
 ls -la /usr/share/wordlists/rockyou.txt /usr/share/seclists/Passwords/Common-Credentials/ 2>/dev/null && wc -l /usr/share/wordlists/rockyou.txt
 ```
 
-### Kali Linux Default Paths
+### Caminhos Padrão no Kali Linux
 
-| Path | Description |
+| Caminho | Descrição |
 | :--- | :--- |
-| `/usr/share/wordlists/` | Main wordlist directory |
-| `/usr/share/wordlists/rockyou.txt` | Most popular password list (14M) |
-| `/usr/share/wordlists/dirb/` | DIRB directory wordlists |
-| `/usr/share/wordlists/dirbuster/` | DirBuster wordlists |
-| `/usr/share/wordlists/wfuzz/` | WFuzz wordlists |
-| `/usr/share/wordlists/seclists/` | SecLists collection |
-| `/usr/share/wordlists/fasttrack.txt` | Fast track common passwords |
-| `/usr/share/wordlists/metasploit/` | Metasploit wordlists |
+| `/usr/share/wordlists/` | Diretório principal de wordlists |
+| `/usr/share/wordlists/rockyou.txt` | Lista de senhas mais popular (14M) |
+| `/usr/share/wordlists/dirb/` | Wordlists de diretórios do DIRB |
+| `/usr/share/wordlists/dirbuster/` | Wordlists do DirBuster |
+| `/usr/share/wordlists/wfuzz/` | Wordlists do WFuzz |
+| `/usr/share/wordlists/seclists/` | Coleção SecLists |
+| `/usr/share/wordlists/fasttrack.txt` | Senhas comuns do Fast Track |
+| `/usr/share/wordlists/metasploit/` | Wordlists do Metasploit |
 
-### SecLists Paths
+### Caminhos do SecLists
 
 ```shell
-# Install SecLists
+# Instalar SecLists
 apt install seclists
 
-# Location
+# Localização
 /usr/share/seclists/
 ├── Discovery/
 │   ├── DNS/
@@ -57,40 +57,40 @@ apt install seclists
 
 ---
 
-## Password Wordlists
+## Wordlists de Senhas
 
-### General Purpose
+### Uso Geral
 
-| Wordlist | Path | Size | Use Case |
+| Wordlist | Caminho | Tamanho | Caso de Uso |
 | :--- | :--- | :--- | :--- |
-| rockyou.txt | `/usr/share/wordlists/rockyou.txt` | 14M | General password cracking |
-| fasttrack.txt | `/usr/share/wordlists/fasttrack.txt` | 222 | Quick common passwords |
-| common-passwords | `/usr/share/seclists/Passwords/Common-Credentials/10k-most-common.txt` | 10K | Fast initial attempt |
-| best1050 | `/usr/share/seclists/Passwords/Common-Credentials/best1050.txt` | 1050 | Very common passwords |
+| rockyou.txt | `/usr/share/wordlists/rockyou.txt` | 14M | Quebra geral de senhas |
+| fasttrack.txt | `/usr/share/wordlists/fasttrack.txt` | 222 | Senhas comuns rápidas |
+| common-passwords | `/usr/share/seclists/Passwords/Common-Credentials/10k-most-common.txt` | 10K | Tentativa inicial rápida |
+| best1050 | `/usr/share/seclists/Passwords/Common-Credentials/best1050.txt` | 1050 | Senhas muito comuns |
 
-### By Complexity
+### Por Complexidade
 
 ```shell
-# Top 100 passwords (fast)
+# Top 100 senhas (rápido)
 /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-100.txt
 
-# Top 1000 passwords
+# Top 1000 senhas
 /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt
 
-# Top 10000 passwords
+# Top 10000 senhas
 /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-10000.txt
 
-# Top 100000 passwords
+# Top 100000 senhas
 /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-100000.txt
 
-# Top 1 million passwords
+# Top 1 milhão de senhas
 /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000000.txt
 ```
 
-### Default Credentials
+### Credenciais Padrão
 
 ```shell
-# Default usernames/passwords
+# Usuários/senhas padrão
 /usr/share/seclists/Passwords/Default-Credentials/default-passwords.csv
 /usr/share/seclists/Passwords/Default-Credentials/ftp-betterdefaultpasslist.txt
 /usr/share/seclists/Passwords/Default-Credentials/ssh-betterdefaultpasslist.txt
@@ -100,10 +100,10 @@ apt install seclists
 /usr/share/seclists/Passwords/Default-Credentials/mysql-betterdefaultpasslist.txt
 ```
 
-### Leaked Database Passwords
+### Senhas de Bancos de Dados Vazados
 
 ```shell
-# Hashcat leaked passwords
+# Senhas vazadas do Hashcat
 /usr/share/seclists/Passwords/Leaked-Databases/rockyou.txt.tar.gz
 /usr/share/seclists/Passwords/Leaked-Databases/phpbb.txt
 /usr/share/seclists/Passwords/Leaked-Databases/myspace.txt
@@ -112,28 +112,28 @@ apt install seclists
 
 ---
 
-## Username Wordlists
+## Wordlists de Usuários
 
-### General Usernames
+### Usuários Gerais
 
 ```shell
-# Common usernames
+# Usuários comuns
 /usr/share/seclists/Usernames/top-usernames-shortlist.txt
 /usr/share/seclists/Usernames/Names/names.txt
 /usr/share/seclists/Usernames/cirt-default-usernames.txt
 
-# Unix users
+# Usuários Unix
 /usr/share/seclists/Usernames/unix-users.txt
 
-# Service-specific
+# Específicos por serviço
 /usr/share/metasploit-framework/data/wordlists/unix_users.txt
 /usr/share/metasploit-framework/data/wordlists/default_users_for_services_unhash.txt
 ```
 
-### By First/Last Name
+### Por Nome/Sobrenome
 
 ```shell
-# Names for username generation
+# Nomes para geração de usuários
 /usr/share/seclists/Usernames/Names/familynames-usa-top1000.txt
 /usr/share/seclists/Usernames/Names/femalenames-usa-top1000.txt
 /usr/share/seclists/Usernames/Names/malenames-usa-top1000.txt
@@ -141,17 +141,17 @@ apt install seclists
 
 ---
 
-## Directory Wordlists
+## Wordlists de Diretórios
 
-### Web Directories
+### Diretórios Web
 
 ```shell
-# DIRB wordlists
-/usr/share/wordlists/dirb/common.txt           # 4614 words
-/usr/share/wordlists/dirb/big.txt              # 20469 words
-/usr/share/wordlists/dirb/small.txt            # 959 words
+# Wordlists DIRB
+/usr/share/wordlists/dirb/common.txt           # 4614 palavras
+/usr/share/wordlists/dirb/big.txt              # 20469 palavras
+/usr/share/wordlists/dirb/small.txt            # 959 palavras
 
-# DirBuster wordlists
+# Wordlists DirBuster
 /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt    # 87K
 /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt   # 220K
 /usr/share/wordlists/dirbuster/directory-list-lowercase-2.3-medium.txt
@@ -163,7 +163,7 @@ apt install seclists
 /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt
 ```
 
-### Specific Technologies
+### Tecnologias Específicas
 
 ```shell
 # Apache
@@ -190,26 +190,26 @@ apt install seclists
 
 ---
 
-## Subdomain Wordlists
+## Wordlists de Subdomínios
 
 ```shell
-# DNS subdomain enumeration
+# Enumeração de subdomínios DNS
 /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
 /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt
 /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt
 /usr/share/seclists/Discovery/DNS/namelist.txt
 /usr/share/seclists/Discovery/DNS/bitquark-subdomains-top100000.txt
-/usr/share/seclists/Discovery/DNS/dns-Jhaddix.txt   # 2M+ (comprehensive)
+/usr/share/seclists/Discovery/DNS/dns-Jhaddix.txt   # 2M+ (abrangente)
 ```
 
 ---
 
-## Service-Specific Wordlists
+## Wordlists por Serviço
 
 ### SSH
 
 ```shell
-# Hydra SSH brute force
+# Brute force SSH com Hydra
 hydra -L /usr/share/seclists/Usernames/top-usernames-shortlist.txt \
       -P /usr/share/seclists/Passwords/Common-Credentials/10k-most-common.txt \
       ssh://$rhost
@@ -218,7 +218,7 @@ hydra -L /usr/share/seclists/Usernames/top-usernames-shortlist.txt \
 ### FTP
 
 ```shell
-# Hydra FTP brute force
+# Brute force FTP com Hydra
 hydra -L /usr/share/metasploit-framework/data/wordlists/unix_users.txt \
       -P /usr/share/seclists/Passwords/Default-Credentials/ftp-betterdefaultpasslist.txt \
       ftp://$rhost
@@ -252,7 +252,7 @@ wpscan --url http://$rhost --passwords /usr/share/seclists/Passwords/Common-Cred
 ### Kerberos
 
 ```shell
-# Kerbrute user enum
+# Enumeração de usuários com Kerbrute
 kerbrute userenum -d $domain \
          /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt \
          --dc $dc_ip
@@ -262,7 +262,7 @@ impacket-GetNPUsers $domain/ -usersfile /usr/share/seclists/Usernames/Names/name
                     -dc-ip $dc_ip -format hashcat
 ```
 
-### Database
+### Banco de Dados
 
 ```shell
 # MySQL
@@ -283,105 +283,105 @@ hydra -L /usr/share/seclists/Usernames/top-usernames-shortlist.txt \
 
 ---
 
-## Custom Wordlist Generation
+## Geração de Wordlists Personalizadas
 
-### CeWL - Custom Word List Generator
+### CeWL - Gerador de Wordlist Personalizada
 
 ```shell
-# Generate wordlist from website
+# Gerar wordlist a partir de site
 cewl http://$rhost -d 3 -m 5 -w custom_wordlist.txt
 
-# Include email addresses
+# Incluir endereços de e-mail
 cewl http://$rhost -d 3 -m 5 -e --email_file emails.txt -w custom_wordlist.txt
 
-# With authentication
+# Com autenticação
 cewl http://$rhost -d 3 -m 5 --auth_type basic --auth_user admin --auth_pass password -w wordlist.txt
 ```
 
-### Crunch - Wordlist Generator
+### Crunch - Gerador de Wordlist
 
 ```shell
-# Generate 4-6 char passwords with numbers
+# Gerar senhas de 4-6 chars com números
 crunch 4 6 0123456789 -o numeric.txt
 
-# Generate passwords with pattern
-crunch 8 8 -t @@@@%%%% -o pattern.txt   # 4 lowercase + 4 digits
+# Gerar senhas com padrão
+crunch 8 8 -t @@@@%%%% -o pattern.txt   # 4 minúsculas + 4 dígitos
 
-# Using charset
+# Usando charset
 crunch 4 8 -f /usr/share/crunch/charset.lst mixalpha-numeric -o mixed.txt
 ```
 
-### Username Wordlist Generation
+### Geração de Wordlist de Usuários
 
 ```shell
-# From names to usernames
-# John Smith -> jsmith, john.smith, smithj, etc.
+# De nomes para usuários
+# João Silva -> jsilva, joao.silva, silvaj, etc.
 
-# Using username-anarchy
+# Usando username-anarchy
 git clone https://github.com/urbanadventurer/username-anarchy.git
-./username-anarchy John Smith > usernames.txt
+./username-anarchy Joao Silva > usernames.txt
 
-# Manual patterns
-echo -e "jsmith\njohn.smith\nsmithj\njohns\nj.smith" > usernames.txt
+# Padrões manuais
+echo -e "jsilva\njoao.silva\nsilwaj\njoaos\nj.silva" > usernames.txt
 ```
 
-### Combine Wordlists
+### Combinar Wordlists
 
 ```shell
-# Merge and deduplicate
+# Mesclar e remover duplicatas
 cat wordlist1.txt wordlist2.txt | sort -u > combined.txt
 
-# Remove short passwords
+# Remover senhas curtas
 awk 'length >= 8' /usr/share/wordlists/rockyou.txt > rockyou_8plus.txt
 ```
 
 ---
 
-## Username Generation Tools
+## Ferramentas de Geração de Usuários
 
 ### username-anarchy
 
-> Generate username variations from first/last names
+> Gerar variações de nome de usuário a partir de nome/sobrenome
 
 ```shell
-# Install
+# Instalar
 git clone https://github.com/urbanadventurer/username-anarchy.git
 cd username-anarchy
 
-# Generate from single name
-./username-anarchy John Smith
-# Output: jsmith, john.smith, smithj, john_smith, etc.
+# Gerar a partir de um único nome
+./username-anarchy Joao Silva
+# Saída: jsilva, joao.silva, silvaj, joao_silva, etc.
 
-# From file of names
+# A partir de arquivo de nomes
 ./username-anarchy -i names.txt > usernames.txt
 
-# Input format for names.txt:
-# FirstName LastName
-# John Smith
-# Jane Doe
+# Formato de entrada para names.txt:
+# Nome Sobrenome
+# Joao Silva
+# Maria Santos
 ```
 
-#### Common Patterns Generated
+#### Padrões Comuns Gerados
 
-| Pattern | Example |
+| Padrão | Exemplo |
 | :--- | :--- |
-| first.last | john.smith |
-| f.last | j.smith |
-| first_last | john_smith |
-| firstlast | johnsmith |
-| lastfirst | smithjohn |
-| flast | jsmith |
-| lastf | smithj |
-| first | john |
-| last | smith |
+| nome.sobrenome | joao.silva |
+| n.sobrenome | j.silva |
+| nome_sobrenome | joao_silva |
+| nomesobrenome | joaosilva |
+| sobrenomenome | silvajoao |
+| nsobrenome | jsilva |
+| sobrenomen | silvaj |
+| nome | joao |
+| sobrenome | silva |
 
-### Generate from CSV/Excel Data
+### Gerar a partir de Dados CSV/Excel
 
 ```shell
-# From CSV with FirstName;LastName format
+# A partir de CSV com formato Nome;Sobrenome
 awk -F';' '{printf("%s%s\n", tolower(substr($1,1,1)), tolower($2))}' Users.csv > userlist.txt
 
-# Multiple patterns from CSV
+# Múltiplos padrões a partir de CSV
 awk -F';' '{
   first=tolower($1)
   last=tolower($2)
@@ -395,24 +395,24 @@ awk -F';' '{
 
 ### Namemash.py
 
-> Another username generator
+> Outro gerador de nomes de usuário
 
 ```shell
-# Install
+# Instalar
 git clone https://github.com/superkojiman/namemash.git
 cd namemash
 
-# Generate usernames
+# Gerar usuários
 python namemash.py names.txt > usernames.txt
 
-# Input format:
-# First Last
+# Formato de entrada:
+# Nome Sobrenome
 ```
 
-### Manual Username Generation
+### Geração Manual de Usuários
 
 ```shell
-# Quick script to generate variations
+# Script rápido para gerar variações
 #!/bin/bash
 while read line; do
   first=$(echo $line | cut -d' ' -f1 | tr '[:upper:]' '[:lower:]')
@@ -430,36 +430,36 @@ while read line; do
 done < names.txt | sort -u > usernames.txt
 ```
 
-### Extract Names from Metadata
+### Extrair Nomes de Metadados
 
 ```shell
-# Extract author names from documents
+# Extrair nomes de autores de documentos
 exiftool -Creator -Author -LastModifiedBy *.pdf *.docx *.xlsx 2>/dev/null | \
   grep -v "^$" | cut -d':' -f2 | sort -u > names.txt
 
-# Then generate usernames
+# Em seguida, gerar usuários
 ./username-anarchy -i names.txt > usernames.txt
 ```
 
 ---
 
-## Quick Reference Table
+## Tabela de Referência Rápida
 
-| Use Case | Recommended Wordlist |
+| Caso de Uso | Wordlist Recomendada |
 | :--- | :--- |
-| Quick password spray | `/usr/share/seclists/Passwords/Common-Credentials/best1050.txt` |
-| Full password crack | `/usr/share/wordlists/rockyou.txt` |
-| Web directory fuzzing | `/usr/share/seclists/Discovery/Web-Content/raft-large-directories.txt` |
-| Subdomain enumeration | `/usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt` |
-| Username enumeration | `/usr/share/seclists/Usernames/top-usernames-shortlist.txt` |
-| Default credentials | `/usr/share/seclists/Passwords/Default-Credentials/default-passwords.csv` |
-| API fuzzing | `/usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt` |
-| AD usernames | `/usr/share/seclists/Usernames/Names/names.txt` |
+| Password spray rápido | `/usr/share/seclists/Passwords/Common-Credentials/best1050.txt` |
+| Quebra completa de senhas | `/usr/share/wordlists/rockyou.txt` |
+| Fuzzing de diretórios web | `/usr/share/seclists/Discovery/Web-Content/raft-large-directories.txt` |
+| Enumeração de subdomínios | `/usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt` |
+| Enumeração de usuários | `/usr/share/seclists/Usernames/top-usernames-shortlist.txt` |
+| Credenciais padrão | `/usr/share/seclists/Passwords/Default-Credentials/default-passwords.csv` |
+| Fuzzing de API | `/usr/share/seclists/Discovery/Web-Content/api/api-endpoints.txt` |
+| Usuários AD | `/usr/share/seclists/Usernames/Names/names.txt` |
 
 ---
 
-## See Also
+## Veja Também
 
-- **[Password Attacks](../3.AD-Exploit/3.2.Password-Attacks.md)** - hashcat, John, credential cracking
-- **[Kerberos Attacks](../3.AD-Exploit/3.3.Kerberos-Attacks.md)** - Use wordlists for ASREPRoast/Kerberoasting
-- **[Web Application Analysis](../7.Web-Exploit/7.0.Web-Application-Analysis.md)** - Directory fuzzing, parameter brute force
+- **[Ataques de Senha](../3.AD-Exploit/3.2.Password-Attacks.md)** - hashcat, John, quebra de credenciais
+- **[Ataques Kerberos](../3.AD-Exploit/3.3.Kerberos-Attacks.md)** - Uso de wordlists para ASREPRoast/Kerberoasting
+- **[Análise de Aplicações Web](../7.Web-Exploit/7.0.Web-Application-Analysis.md)** - Fuzzing de diretórios, brute force de parâmetros
