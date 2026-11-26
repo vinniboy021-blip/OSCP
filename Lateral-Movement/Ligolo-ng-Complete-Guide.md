@@ -698,8 +698,8 @@ getcap ./proxy
 
 ### Related Lateral Movement Files
 
-- **[Pivoting & Tunneling](5.2.Pivoting-Tunneling.md)** - SSH tunnels, Chisel, Proxychains, sshuttle
-- **[Lateral Movement](5.1.Lateral-Movement.md)** - PsExec, WMI, WinRM, Pass-the-Hash
+- **[Pivoting & Tunneling](Pivoting-Tunneling.md)** - SSH tunnels, Chisel, Proxychains, sshuttle
+- **[Lateral Movement](Lateral-Movement.md)** - PsExec, WMI, WinRM, Pass-the-Hash
 
 ### AD Exploitation (After Pivoting)
 
